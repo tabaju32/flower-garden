@@ -32,7 +32,8 @@ main{padding:24px 18px 55px}.notice{border:1px solid #e6d8c9;background:#fff8ef;
 <script>
 let sb=null,user=null,canEdit=false,isAdmin=false,myFriendId=null,flowers=[],friends=[],flowerLinks=[],editing=null;
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function config(){return {url:localStorage.getItem('fg_url')||'',key:localStorage.getItem('fg_key')||''}}
+function config(){return {url:localStorage.getItem('fg_url')||'https://wbpqdvvmnvugvtaoyejv.supabase.co',
+key:localStorage.getItem('fg_key')||'sb_publishable_W6QxN92yTUPEYGok_LQXYA_TIrMT57C'||''}}
 async function connectCloud(){let url=$('sbUrl').value.trim(),key=$('sbKey').value.trim();if(!url||!key)return alert('請填入 Supabase URL 與 anon/public key');localStorage.setItem('fg_url',url);localStorage.setItem('fg_key',key);await initCloud()}
 async function initCloud(){let c=config();$('sbUrl').value=c.url;$('sbKey').value=c.key;if(!c.url||!c.key||!window.supabase){setNotice('尚未設定雲端資料庫，請到管理設定完成連線。');return}sb=window.supabase.createClient(c.url,c.key);let {data,error}=await sb.auth.getSession();if(error){setNotice('雲端連線失敗：'+error.message);return}user=data.session?.user||null;await refreshAuth();await loadData();sb.auth.onAuthStateChange(async(_event,session)=>{user=session?.user||null;await refreshAuth();await loadData()})}
 function setNotice(t){$('connectionNotice').textContent=t}
