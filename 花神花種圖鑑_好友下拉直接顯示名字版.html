@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3eb"><title>花神花種圖鑑｜好友共享版</title>
+<style>
+:root{--ink:#34443b;--muted:#7d897f;--cream:#f7f5ef;--paper:#fffefa;--pink:#e9b9b5;--rose:#a96568;--sage:#b8c9b5;--line:#e8e6dc;--shadow:0 12px 35px #46554412}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:"Noto Sans TC","PingFang TC",system-ui,sans-serif}
+header{background:linear-gradient(125deg,#f4e5df,#f5f2e7 55%,#e5eee3);padding:30px 20px;border-bottom:1px solid #e8e3d8}.hero,main{max-width:1050px;margin:auto}.hero{display:flex;justify-content:space-between;align-items:center}.eyebrow{letter-spacing:.2em;color:var(--rose);font-size:12px;font-weight:700}.hero h1{font:500 clamp(30px,5vw,44px) Georgia,"Noto Serif TC",serif;letter-spacing:.08em;margin:9px 0}.hero p{color:#6d7a70;margin:0}.mark{font-size:66px;opacity:.7}
+main{padding:24px 18px 55px}.notice{border:1px solid #e6d8c9;background:#fff8ef;border-radius:14px;padding:12px 15px;font-size:13px;line-height:1.7;margin-bottom:16px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:17px}.stat,.panel,.card{background:var(--paper);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow)}.stat{padding:14px 17px}.stat strong{display:block;font:29px Georgia,serif;color:var(--rose)}.stat span{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.tab,button{border:0;border-radius:99px;padding:10px 16px;font:inherit;cursor:pointer}.tab{background:#e9ece5;color:#657267}.tab.active,.primary{background:var(--ink);color:white}.soft{background:#e9eee6;color:#4c6252}.rose{background:#f2e2df;color:#8c5559}.danger{background:#f7e7e4;color:#9b514d}.panel{padding:19px;margin:13px 0}.panel h2{font:21px Georgia,"Noto Serif TC",serif;margin:0 0 14px}.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}.field label{font-size:12px;color:var(--muted)}.friend-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px;padding:12px;border:1px solid #dedfd5;border-radius:11px}.friend-choice{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #e8e6dc;border-radius:10px;font-size:15px!important;color:var(--ink)!important}.friend-choice input{width:18px;height:18px;accent-color:var(--ink)}input,select,textarea{width:100%;padding:11px 12px;border:1px solid #dedfd5;border-radius:11px;background:#fffefa;color:var(--ink);font:inherit}.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.row .field{flex:1 1 180px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-top:14px}.card{padding:14px}.pic{height:190px;border-radius:12px;background:linear-gradient(140deg,#f8eee8,#edf2e9);display:grid;place-items:center;font-size:43px;overflow:hidden}.pic img{width:100%;height:100%;object-fit:cover}.card h3{margin:11px 0 4px}.card p{font-size:13px;color:var(--muted);margin:5px 0}.tag{display:inline-block;background:#edf1e9;color:#62735f;padding:4px 9px;border-radius:99px;font-size:11px;margin-top:6px}.actions{display:flex;gap:7px;margin-top:12px}.actions button{font-size:12px;padding:7px 11px}.hidden{display:none!important}.empty{text-align:center;padding:38px 10px;color:var(--muted);grid-column:1/-1}.small{font-size:12px;color:var(--muted);line-height:1.7}.authbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.badge{font-size:12px;border-radius:99px;background:#edf1e9;padding:6px 10px;color:#566c59}.modal{position:fixed;inset:0;background:#25352f66;display:grid;place-items:center;padding:16px;z-index:5}.dialog{background:var(--paper);border-radius:19px;padding:21px;width:min(500px,100%);max-height:90vh;overflow:auto}.dialog h2{margin-top:0}.end{text-align:center;color:#9aa398;font-size:12px;margin-top:30px}
+@media(max-width:620px){.mark{font-size:48px}.stats{gap:7px}.stat{padding:11px}.stat strong{font-size:24px}.filters{grid-template-columns:1fr}.panel{padding:15px}}
+</style>
+<!-- Supabase client library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header><div class="hero"><div><div class="eyebrow">✿ YOUR LITTLE BOTANICAL ARCHIVE</div><h1>花神花種圖鑑</h1><p>只記錄花名與圖片，輕鬆管理好友收藏。</p></div><div class="mark">✿</div></div></header>
+<main>
+ <div class="notice" id="connectionNotice">目前尚未設定雲端資料庫。完成下方「管理設定」中的 Supabase 設定後，即可啟用好友共享。未設定時不會假裝資料已同步。</div>
+ <section class="stats"><div class="stat"><strong id="friendCount">0</strong><span>位好友</span></div><div class="stat"><strong id="flowerCount">0</strong><span>種花朵</span></div><div class="stat"><strong id="recordCount">0</strong><span>筆花種紀錄</span></div></section>
+ <div class="panel"><div class="authbar"><div><b id="authState">尚未登入</b><div class="small" id="roleState">公開訪客可瀏覽；只有管理員可以編輯。</div></div><span class="badge" id="permissionBadge">公開瀏覽</span></div><div class="row" style="margin-top:13px"><div class="field"><label>電子郵件</label><input id="email" type="email" placeholder="name@example.com"></div><div class="field"><label>密碼</label><input id="password" type="password" placeholder="至少 6 個字元"></div><button class="primary" onclick="signIn()">登入</button><button class="soft" onclick="signUp()">註冊帳號</button><button class="rose hidden" id="logoutBtn" onclick="signOut()">登出</button></div><p class="small">訪客無須登入；只有管理員帳號可以編輯。</p></div>
+ <nav class="tabs"><button class="tab active" data-view="catalog">✿ 花種收藏</button><button class="tab" data-view="friends">♡ 好友名單</button><button class="tab" data-view="settings">⚙ 管理設定</button></nav>
+ <section id="catalogView"><div class="panel"><div class="filters"><div class="field"><label>搜尋花名</label><input id="search" placeholder="輸入花朵名稱…"></div><div class="field"><label>依好友篩選</label><select id="friendFilter"><option value="">所有好友</option></select></div></div></div>
+ <div class="row" style="justify-content:space-between;margin:17px 2px 8px"><h2 style="font:22px Georgia,serif;margin:0">花朵收藏 <span class="small" id="countLabel"></span></h2><button class="rose editor-only hidden" onclick="openFlower()">＋ 新增花種</button></div><div id="flowerGrid" class="grid"></div></section>
+ <section id="friendsView" class="hidden"><div class="panel"><h2>好友名單</h2><p class="small">好友名稱會顯示在花種紀錄中。同一種花可以同時收藏於多位好友名下，只有管理員可以修改。</p><div id="friendsList" class="grid"></div><div class="row admin-only hidden" style="margin-top:15px"><div class="field"><label>新增好友名稱</label><input id="friendName" placeholder="好友暱稱"></div><button class="primary" onclick="addFriend()">新增好友</button></div></div></section>
+ <section id="settingsView" class="hidden"><div class="panel"><h2>雲端連線設定</h2><p class="small">建立 Supabase 專案後，填入 Project URL 與 anon/public key。這兩項可放在前端；絕不可填入 service_role key。</p><div class="field"><label>Supabase Project URL</label><input id="sbUrl" placeholder="https://xxxxxxxx.supabase.co"></div><div class="field" style="margin-top:10px"><label>Supabase anon / publishable key</label><input id="sbKey" placeholder="eyJ... 或 sb_publishable_..."></div><button class="primary" style="margin-top:12px" onclick="connectCloud()">儲存並連線</button><p class="small">連線設定只儲存在目前瀏覽器。若要讓每位好友使用同一個網站，請將這兩項寫入網站部署環境或由管理者完成設定。</p></div>
+ <div class="panel"><h2>資料庫初始化</h2><p class="small">請在 Supabase → SQL Editor 執行隨附的 <b>upgrade_simple.sql</b>，再依說明綁定好友帳號。</p><p class="small">此版本公開讀取，只有管理員可以修改資料。複選好友功能請先執行隨附的 SQL。</p></div></section>
+ <div class="end">✿ 花神花種圖鑑 · 好友複選圖片卡片版 ✿</div>
+</main>
+<div id="modal" class="modal hidden"><div class="dialog"><h2 id="dialogTitle">新增花種</h2><div class="field"><label>好友（可複選）</label><div id="fFriends" class="friend-checks"></div></div><div class="field" style="margin-top:10px"><label>花朵名稱</label><input id="fName" placeholder="花朵名稱"></div><div class="field" style="margin-top:10px"><label>花朵圖片（選填，從手機選擇）</label><input id="fImageFile" type="file" accept="image/*" onchange="previewImage()"><div id="imagePreview" class="pic" style="height:150px">🌷</div><label><input type="checkbox" id="removeImage" style="width:auto"> 移除原有圖片</label></div><div class="row" style="justify-content:flex-end;margin-top:17px"><button class="soft" onclick="closeModal()">取消</button><button class="primary" onclick="saveFlower()">儲存</button></div></div></div>
+<script>
+let sb=null,user=null,canEdit=false,isAdmin=false,myFriendId=null,flowers=[],friends=[],flowerLinks=[],editing=null;
+const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function config(){return {url:localStorage.getItem('fg_url')||'',key:localStorage.getItem('fg_key')||''}}
+async function connectCloud(){let url=$('sbUrl').value.trim(),key=$('sbKey').value.trim();if(!url||!key)return alert('請填入 Supabase URL 與 anon/public key');localStorage.setItem('fg_url',url);localStorage.setItem('fg_key',key);await initCloud()}
+async function initCloud(){let c=config();$('sbUrl').value=c.url;$('sbKey').value=c.key;if(!c.url||!c.key||!window.supabase){setNotice('尚未設定雲端資料庫，請到管理設定完成連線。');return}sb=window.supabase.createClient(c.url,c.key);let {data,error}=await sb.auth.getSession();if(error){setNotice('雲端連線失敗：'+error.message);return}user=data.session?.user||null;await refreshAuth();await loadData();sb.auth.onAuthStateChange(async(_event,session)=>{user=session?.user||null;await refreshAuth();await loadData()})}
+function setNotice(t){$('connectionNotice').textContent=t}
+async function refreshAuth(){
+ canEdit=false;isAdmin=false;myFriendId=null;
+ if(user){let {data,error}=await sb.from('profiles').select('can_edit,is_admin,friend_id').eq('id',user.id).maybeSingle();if(error)setNotice('權限讀取失敗：'+error.message);canEdit=!!data?.can_edit;isAdmin=!!data?.is_admin;myFriendId=data?.friend_id||null;}
+ $('authState').textContent=user?`已登入：${user.email}`:'尚未登入';
+ $('roleState').textContent=isAdmin?'管理員：可以管理所有收藏及好友。':'公開訪客可以瀏覽，只有管理員能編輯。';
+ $('permissionBadge').textContent=isAdmin?'管理員':'公開瀏覽';
+ $('logoutBtn').classList.toggle('hidden',!user);
+ document.querySelectorAll('.editor-only').forEach(x=>x.classList.toggle('hidden',!isAdmin));
+ document.querySelectorAll('.admin-only').forEach(x=>x.classList.toggle('hidden',!isAdmin));
+}
+function canManage(f){return !!(isAdmin&&f);}
+async function signIn(){if(!sb)return alert('請先在管理設定完成雲端連線');let {error}=await sb.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(error)alert(error.message)}
+async function signUp(){if(!sb)return alert('請先在管理設定完成雲端連線');let {error}=await sb.auth.signUp({email:$('email').value,password:$('password').value});if(error)alert(error.message);else alert('註冊申請已送出。請依 Supabase 郵件設定完成驗證，再請管理者授予編輯權。')}
+async function signOut(){await sb.auth.signOut()}
+async function loadData(){if(!sb)return;let [fr,fl,links]=await Promise.all([sb.from('friends').select('*').order('name'),sb.from('flowers').select('*').order('created_at',{ascending:false}),sb.from('flower_friends').select('flower_id,friend_id')]);if(fr.error||fl.error||links.error){const e=fr.error||fl.error||links.error;setNotice('資料讀取失敗：'+e.message+'（'+(e.code||'無錯誤代碼')+'）。請先執行複選好友 SQL。');return}friends=fr.data||[];flowers=fl.data||[];flowerLinks=links.data||[];setNotice('雲端已連線。所有人可以瀏覽，只有管理員可以編輯。');render()}
+function render(){ $('friendCount').textContent=friends.length;$('flowerCount').textContent=new Set(flowers.map(f=>f.name.toLowerCase())).size;$('recordCount').textContent=flowers.length;$('fFriends').innerHTML=friends.map(f=>`<label class="friend-choice"><input type="checkbox" value="${f.id}">${esc(f.name)}</label>`).join('');renderFlowers();$('friendsList').innerHTML=friends.length?friends.map(f=>`<article class="card"><b>♡ ${esc(f.name)}</b><p>${flowers.filter(x=>friendIds(x).includes(f.id)).length} 筆花種紀錄</p>${isAdmin?`<div class="actions"><button class="danger" onclick="deleteFriend('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">目前還沒有好友資料。</div>'}
+function renderFlowers(){
+ const q=$('search').value.trim().toLowerCase();
+ const matching=flowers.filter(f=>!q||f.name.toLowerCase().includes(q));
+ const owned=new Set(matching.flatMap(friendIds));
+ const filter=$('friendFilter');
+ const prev=filter.value;
+ const eligible=friends.filter(f=>!q||owned.has(f.id));
+ filter.innerHTML=eligible.length
+   ? eligible.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('')
+   : '<option value="">沒有符合的好友</option>';
+ filter.value=eligible.some(f=>f.id===prev)?prev:(eligible[0]?.id||'');
+ filter.disabled=!eligible.length;
+ const fid=filter.value;
+ const arr=matching.filter(f=>!fid||friendIds(f).includes(fid));
+ $('countLabel').textContent=`（${arr.length} 筆）`;
+ $('flowerGrid').innerHTML=arr.length?arr.map(f=>`<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ ${esc(friendIds(f).map(friendName).join('、')||'未指定好友')}</p>${canManage(f)?`<div class="actions"><button class="soft" onclick="editFlower('${f.id}')">編輯</button><button class="danger" onclick="deleteFlower('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">❀<br>目前沒有符合條件的花種紀錄。</div>';
+}
+function friendIds(f){let ids=flowerLinks.filter(x=>x.flower_id===f.id).map(x=>x.friend_id);return ids.length?ids:(f.friend_id?[f.friend_id]:[])}
+function friendName(id){return friends.find(f=>f.id===id)?.name||'未指定好友'}
+function openFlower(f=null){if(!isAdmin)return alert('只有管理員可以編輯');if(f&&!canManage(f))return alert('只能編輯自己的收藏');if(!friends.length)return alert('請先新增好友資料');editing=f?.id||null;$('dialogTitle').textContent=f?'編輯花種':'新增花種';let selected=f?friendIds(f):[friends[0].id];document.querySelectorAll('#fFriends input').forEach(x=>x.checked=selected.includes(x.value));$('fName').value=f?.name||'';$('fImageFile').value='';$('removeImage').checked=false;showImagePreview(f?.image_url||'');$('modal').classList.remove('hidden')}
+function editFlower(id){openFlower(flowers.find(x=>x.id===id))}function closeModal(){$('modal').classList.add('hidden')}
+function showImagePreview(url){$('imagePreview').innerHTML=url?`<img src="${esc(url)}" alt="圖片預覽">`:'🌷';}
+function previewImage(){let file=$('fImageFile').files[0];if(!file)return; if(!file.type.startsWith('image/'))return alert('請選擇圖片檔案'); if(file.size>5*1024*1024)return alert('圖片請小於 5 MB');let reader=new FileReader();reader.onload=()=>showImagePreview(reader.result);reader.readAsDataURL(file);}
+async function saveFlower(){
+ if(!user||!isAdmin)return alert('只有管理員可以編輯');
+ let old=editing?flowers.find(f=>f.id===editing):null;
+ let selectedFriends=[...document.querySelectorAll('#fFriends input:checked')].map(x=>x.value);if(!selectedFriends.length)return alert('請至少選擇一位好友');let payload={friend_id:selectedFriends[0],name:$('fName').value.trim()};
+ if(!payload.name)return alert('請輸入花朵名稱');
+ let file=$('fImageFile').files[0];
+ if(file){
+   if(!file.type.startsWith('image/')||file.size>5*1024*1024)return alert('請選擇小於 5 MB 的圖片');
+   let ext=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif' })[file.type];
+   if(!ext)return alert('圖片格式限 JPG、PNG、WebP 或 GIF');
+   let path=`${user.id}/${crypto.randomUUID()}.${ext}`;
+   let uploaded=await sb.storage.from('flower-images').upload(path,file,{contentType:file.type,upsert:false});
+   if(uploaded.error)return alert('圖片上傳失敗：'+uploaded.error.message+'。請先執行新版圖片 SQL。');
+   payload.image_url=sb.storage.from('flower-images').getPublicUrl(path).data.publicUrl;
+ }else if($('removeImage').checked){payload.image_url=null;}
+ let result=editing?await sb.from('flowers').update(payload).eq('id',editing).select('id').single():await sb.from('flowers').insert({...payload,owner_user_id:user.id}).select('id').single();
+ if(result.error)return alert('儲存失敗：'+result.error.message);
+ let flowerId=result.data.id;
+ let linked=await sb.rpc('set_flower_friends',{p_flower_id:flowerId,p_friend_ids:selectedFriends});
+ if(linked.error)return alert('花朵已儲存，但好友關聯更新失敗：'+linked.error.message);
+ closeModal();await loadData();
+}
+async function deleteFlower(id){if(!canManage(flowers.find(f=>f.id===id)))return alert('只能刪除自己的收藏');if(!confirm('確定刪除這筆花種紀錄？'))return;let {error}=await sb.from('flowers').delete().eq('id',id);if(error)alert(error.message);else await loadData()}
+async function addFriend(){if(!isAdmin)return alert('僅管理員可以新增好友');let name=$('friendName').value.trim();if(!name)return alert('請輸入好友名稱');let {error}=await sb.from('friends').insert({name});if(error)alert(error.message);else{$('friendName').value='';await loadData()}}
+async function deleteFriend(id){if(!isAdmin)return alert('僅管理員可以刪除好友');if(!confirm('確定刪除好友及其花種紀錄？'))return;let {error}=await sb.from('friends').delete().eq('id',id);if(error)alert(error.message);else await loadData()}
+function view(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['catalog','friends','settings'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v))}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>view(b.dataset.view));$('search').oninput=renderFlowers;$('friendFilter').onchange=renderFlowers;
+(async()=>{let c=config();$('sbUrl').value=c.url;$('sbKey').value=c.key;if(c.url&&c.key)await initCloud()})();
+</script>
+</body></html>
