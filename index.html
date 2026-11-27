@@ -90,6 +90,12 @@ header h1 {
   #flowerGrid .card, #catalogOwnerGrid .card, #catalogGrid .card {padding: 7px;}
   #flowerGrid .card h3, #catalogOwnerGrid .card h3, #catalogGrid .card h3 {font-size: 14px;}
 }
+/* V12: keep mobile cards content-height instead of stretching to tallest neighbor */
+@media (max-width: 620px) {
+  #catalogOwnerGrid, #catalogGrid, #flowerGrid { align-items: start; }
+  #catalogOwnerGrid .card, #catalogGrid .card, #flowerGrid .card { align-self: start; height: auto; }
+  #catalogOwnerGrid .card p, #flowerGrid .card p { overflow-wrap: anywhere; word-break: normal; }
+}
 </style>
 <!-- Supabase client library -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
