@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#f7f3eb"><meta name="flower-version" content="quality-sorting-v8"><title>花神宮競賽用花種圖鑑</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="花神宮競賽用花種圖鑑">
+<meta property="og:description" content="花神宮競賽花種收藏與好友共享圖鑑">
+<meta property="og:url" content="https://tabaju32.github.io/flower-garden/">
+<meta name="description" content="花神宮競賽花種收藏與好友共享圖鑑">
 <style>
 :root{--ink:#34443b;--muted:#7d897f;--cream:#f7f5ef;--paper:#fffefa;--pink:#e9b9b5;--rose:#a96568;--sage:#b8c9b5;--line:#e8e6dc;--shadow:0 12px 35px #46554412}
 *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:"Noto Sans TC","PingFang TC",system-ui,sans-serif}
@@ -289,8 +294,8 @@ async function loadCatalog(){
  $('recordCount').textContent=catalogOwned.length;
 }
 // 品質分類來自管理員核對的 166 種花名清單；不更動 Supabase 資料。
-const highestQualityFlowers=new Set(["紫霄雲庭", "金鱗飛渡", "星璿寰宇", "身有彩翼", "天上宮闕", "焰火迎春"]);
-const redQualityFlowers=new Set(["九色靈鹿", "仙魅靈狐", "夜夢花庭", "夢幻之心", "大暑·夏漪清歡", "天下 一墨", "小雪·綺窗花韻", "巧月·星眸應水", "扶搖雲鯤", "星垂綺夜", "星夜奇遇", "星河映蕊", "有龍則靈", "杏月·花影雅憩", "柳月·溪亭燕語", "桂月·秋千雅語", "桃月·雲汐灼華", "梅月·疏影聽弦", "榴月·絳花照影", "槐月·蝶夢輕語", "歡雪頌冬", "歡雲妙舞", "瑤光芙華", "碧羽青鸞", "福運招財", "秋分·楓華玉律", "緋夜薔歌", "緣定鵲橋", "繁花滿築", "花宴流芳", "花嶼閑趣", "花映長思", "花溪燈語", "花漾春山", "花澗聽泉", "花階聆音", "芳翎昭錦", "芳華尋蝶", "荷月·池光夏夢", "菊月·花間飛鳶", "葭月·棲舟泛漪", "處暑·花苑拾香", "陽月·芙香盈袖", "霜降·丹柿映輝", "飛花似夢"]);
+const highestQualityFlowers=new Set(["紫霄雲庭", "金鱗飛渡", "星璿寰宇", "身有彩翼", "天上宮闕", "焰火迎春", "有龍則靈"]);
+const redQualityFlowers=new Set(["九色靈鹿", "仙魅靈狐", "夜夢花庭", "夢幻之心", "大暑·夏漪清歡", "天下 一墨", "小雪·綺窗花韻", "巧月·星眸應水", "扶搖雲鯤", "星垂綺夜", "星夜奇遇", "星河映蕊", "杏月·花影雅憩", "柳月·溪亭燕語", "桂月·秋千雅語", "桃月·雲汐灼華", "梅月·疏影聽弦", "榴月·絳花照影", "槐月·蝶夢輕語", "歡雪頌冬", "歡雲妙舞", "瑤光芙華", "碧羽青鸞", "福運招財", "秋分·楓華玉律", "緋夜薔歌", "緣定鵲橋", "繁花滿築", "花宴流芳", "花嶼閑趣", "花映長思", "花溪燈語", "花漾春山", "花澗聽泉", "花階聆音", "芳翎昭錦", "芳華尋蝶", "荷月·池光夏夢", "菊月·花間飛鳶", "葭月·棲舟泛漪", "處暑·花苑拾香", "陽月·芙香盈袖", "霜降·丹柿映輝", "飛花似夢"]);
 function flowerQualityRank(name){return highestQualityFlowers.has(name)?0:redQualityFlowers.has(name)?1:2;}
 /* V14: Keep the existing sorted cards and their event handlers. On mobile,
    place each next card into the currently shorter of two actual columns.
