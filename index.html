@@ -40,6 +40,8 @@ header h1 {
   font-size: clamp(30px, 7vw, 52px) !important;
   line-height: 1.35;
 }
+
+.catalog-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.catalog-tools .field{flex:1 1 190px}.catalog-card{position:relative}.catalog-card .pic{height:170px}.catalog-card h3{font-size:15px;overflow-wrap:anywhere}.catalog-check{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px}.catalog-check input{width:19px;height:19px;accent-color:var(--ink)}.catalog-check input:disabled{cursor:not-allowed}.catalog-message{margin:12px 0;color:var(--muted);font-size:13px}
 </style>
 <!-- Supabase client library -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -50,7 +52,7 @@ header h1 {
  <div class="notice" id="connectionNotice">目前尚未設定雲端資料庫。完成下方「管理設定」中的 Supabase 設定後，即可啟用好友共享。未設定時不會假裝資料已同步。</div>
  <section class="stats"><div class="stat"><strong id="friendCount">0</strong><span>位好友</span></div><div class="stat"><strong id="flowerCount">0</strong><span>種花朵</span></div><div class="stat"><strong id="recordCount">0</strong><span>筆花種紀錄</span></div></section>
  <details class="panel"><summary>⚙ 管理員登入</summary><div class="authbar"><div><b id="authState">尚未登入</b><div class="small" id="roleState">公開訪客可瀏覽；只有管理員可以編輯。</div></div><span class="badge" id="permissionBadge">公開瀏覽</span></div><div class="row" style="margin-top:13px"><div class="field"><label>電子郵件</label><input id="email" type="email" placeholder="name@example.com"></div><div class="field"><label>密碼</label><input id="password" type="password" placeholder="至少 6 個字元"></div><button class="primary" onclick="signIn()">登入</button><button class="soft" onclick="signUp()">註冊帳號</button><button class="rose hidden" id="logoutBtn" onclick="signOut()">登出</button></div><p class="small">訪客無須登入；只有管理員帳號可以編輯。</p></details>
- <nav class="tabs"><button class="tab active" data-view="catalog">✿ 花種收藏</button><button class="tab" data-view="friends">♡ 好友名單</button><button class="tab" data-view="settings">⚙ 管理設定</button></nav>
+ <nav class="tabs"><button class="tab active" data-view="catalog">✿ 花種收藏</button><button class="tab" data-view="allflowers">🌸 完整花種圖鑑</button><button class="tab" data-view="friends">♡ 好友名單</button><button class="tab" data-view="settings">⚙ 管理設定</button></nav>
  <section id="catalogView"><div class="panel"><div class="filters"><div class="field"><label>搜尋花名</label><input id="search" placeholder="輸入花朵名稱…"></div><div class="field"><label>依好友篩選</label><select id="friendFilter"><option value="">所有好友</option></select></div></div></div>
  <div class="row" style="justify-content:space-between;margin:17px 2px 8px"><h2 style="font:22px Georgia,serif;margin:0">花朵收藏 <span class="small" id="countLabel"></span></h2><button class="rose editor-only hidden" onclick="openFlower()">＋ 新增花種</button></div><div id="flowerGrid" class="grid"></div></section>
  <section id="friendsView" class="hidden"><div class="panel"><h2>好友名單</h2><p class="small">好友名稱會顯示在花種紀錄中。同一種花可以同時收藏於多位好友名下，只有管理員可以修改。</p><div id="friendsList" class="grid"></div><div class="row admin-only hidden" style="margin-top:15px"><div class="field"><label>新增好友名稱</label><input id="friendName" placeholder="好友暱稱"></div><button class="primary" onclick="addFriend()">新增好友</button></div></div></section>
@@ -60,7 +62,7 @@ header h1 {
 </main>
 <div id="modal" class="modal hidden"><div class="dialog"><h2 id="dialogTitle">新增花種</h2><div class="field"><label>好友（可複選）</label><div id="fFriends" class="friend-checks"></div></div><div class="field" style="margin-top:10px"><label>花朵名稱</label><input id="fName" placeholder="花朵名稱"></div><div class="field" style="margin-top:10px"><label>花朵圖片（選填，從手機選擇）</label><input id="fImageFile" type="file" accept="image/*" onchange="previewImage()"><div id="imagePreview" class="pic" style="height:150px">🌷</div><label><input type="checkbox" id="removeImage" style="width:auto"> 移除原有圖片</label></div><div class="row" style="justify-content:flex-end;margin-top:17px"><button class="soft" onclick="closeModal()">取消</button><button class="primary" onclick="saveFlower()">儲存</button></div></div></div>
 <script>
-let sb=null,user=null,canEdit=false,isAdmin=false,myFriendId=null,flowers=[],friends=[],flowerLinks=[],editing=null;
+let sb=null,user=null,canEdit=false,isAdmin=false,myFriendId=null,flowers=[],friends=[],flowerLinks=[],editing=null,catalogFlowers=[],catalogOwned=[],catalogError="";
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function config(){return {url:localStorage.getItem('fg_url')||'https://wbpqdvvmnvugvtaoyejv.supabase.co',
 key:localStorage.getItem('fg_key')||'sb_publishable_W6QxN92yTUPEYGok_LQXYA_TIrMT57C'||''}}
@@ -71,7 +73,7 @@ async function refreshAuth(){
  canEdit=false;isAdmin=false;myFriendId=null;
  if(user){let {data,error}=await sb.from('profiles').select('can_edit,is_admin,friend_id').eq('id',user.id).maybeSingle();if(error)setNotice('權限讀取失敗：'+error.message);canEdit=!!data?.can_edit;isAdmin=!!data?.is_admin;myFriendId=data?.friend_id||null;}
  $('authState').textContent=user?`已登入：${user.email}`:'尚未登入';
- $('roleState').textContent=isAdmin?'管理員：可以管理所有收藏及好友。':'公開訪客可以瀏覽，只有管理員能編輯。';
+ $('roleState').textContent=isAdmin?'管理員：可以管理所有收藏及好友。':'公開訪客可以瀏覽；綁定好友的登入帳號可勾選自己的花種。';
  $('permissionBadge').textContent=isAdmin?'管理員':'公開瀏覽';
  $('logoutBtn').classList.toggle('hidden',!user);
  document.querySelectorAll('.editor-only').forEach(x=>x.classList.toggle('hidden',!isAdmin));
@@ -81,7 +83,7 @@ function canManage(f){return !!(isAdmin&&f);}
 async function signIn(){if(!sb)return alert('請先在管理設定完成雲端連線');let {error}=await sb.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(error)alert(error.message)}
 async function signUp(){if(!sb)return alert('請先在管理設定完成雲端連線');let {error}=await sb.auth.signUp({email:$('email').value,password:$('password').value});if(error)alert(error.message);else alert('註冊申請已送出。請依 Supabase 郵件設定完成驗證，再請管理者授予編輯權。')}
 async function signOut(){await sb.auth.signOut()}
-async function loadData(){if(!sb)return;let [fr,fl,links]=await Promise.all([sb.from('friends').select('*').order('name'),sb.from('flowers').select('*').order('created_at',{ascending:false}),sb.from('flower_friends').select('flower_id,friend_id')]);if(fr.error||fl.error||links.error){const e=fr.error||fl.error||links.error;setNotice('資料讀取失敗：'+e.message+'（'+(e.code||'無錯誤代碼')+'）。請先執行複選好友 SQL。');return}friends=fr.data||[];flowers=fl.data||[];flowerLinks=links.data||[];setNotice('雲端已連線。所有人可以瀏覽，只有管理員可以編輯。');render()}
+async function loadData(){if(!sb)return;let [fr,fl,links]=await Promise.all([sb.from('friends').select('*').order('name'),sb.from('flowers').select('*').order('created_at',{ascending:false}),sb.from('flower_friends').select('flower_id,friend_id')]);if(fr.error||fl.error||links.error){const e=fr.error||fl.error||links.error;setNotice('資料讀取失敗：'+e.message+'（'+(e.code||'無錯誤代碼')+'）。請先執行複選好友 SQL。');return}friends=fr.data||[];flowers=fl.data||[];flowerLinks=links.data||[];setNotice('雲端已連線。');render();await loadCatalog()}
 function render(){ $('friendCount').textContent=friends.length;$('flowerCount').textContent=new Set(flowers.map(f=>f.name.toLowerCase())).size;$('recordCount').textContent=flowers.length;$('fFriends').innerHTML=friends.map(f=>`<label class="friend-choice"><input type="checkbox" value="${f.id}">${esc(f.name)}</label>`).join('');renderFlowers();$('friendsList').innerHTML=friends.length?friends.map(f=>`<article class="card"><b>♡ ${esc(f.name)}</b><p>${flowers.filter(x=>friendIds(x).includes(f.id)).length} 筆花種紀錄</p>${isAdmin?`<div class="actions"><button class="danger" onclick="deleteFriend('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">目前還沒有好友資料。</div>'}
 function renderFlowers(){
  const q=$('search').value.trim().toLowerCase();
@@ -131,8 +133,42 @@ async function saveFlower(){
 async function deleteFlower(id){if(!canManage(flowers.find(f=>f.id===id)))return alert('只能刪除自己的收藏');if(!confirm('確定刪除這筆花種紀錄？'))return;let {error}=await sb.from('flowers').delete().eq('id',id);if(error)alert(error.message);else await loadData()}
 async function addFriend(){if(!isAdmin)return alert('僅管理員可以新增好友');let name=$('friendName').value.trim();if(!name)return alert('請輸入好友名稱');let {error}=await sb.from('friends').insert({name});if(error)alert(error.message);else{$('friendName').value='';await loadData()}}
 async function deleteFriend(id){if(!isAdmin)return alert('僅管理員可以刪除好友');if(!confirm('確定刪除好友及其花種紀錄？'))return;let {error}=await sb.from('friends').delete().eq('id',id);if(error)alert(error.message);else await loadData()}
-function view(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['catalog','friends','settings'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v))}
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>view(b.dataset.view));$('search').oninput=renderFlowers;$('friendFilter').onchange=renderFlowers;
+function view(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['catalog','allflowers','friends','settings'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v))}
+
+// 完整花種圖鑑：與原有 flowers / flower_friends 資料完全分開。
+async function loadCatalog(){
+ const [c,o]=await Promise.all([
+  sb.from('flower_catalog').select('id,name,image_url').order('name').range(0,999),
+  sb.from('flower_catalog_ownership').select('flower_id,friend_id').range(0,9999)
+ ]);
+ catalogFlowers=c.data||[];catalogOwned=o.data||[];
+ catalogError=c.error?'花種讀取失敗：'+c.error.message:(o.error?'收藏功能尚未設定：'+o.error.message:'');
+ const select=$('catalogFriend'),previous=select.value;
+ select.innerHTML='<option value="">全部花種</option>'+friends.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('');
+ if(previous&&friends.some(f=>f.id===previous))select.value=previous;
+ else if(myFriendId&&!isAdmin)select.value=myFriendId;
+ renderCatalog();
+}
+function renderCatalog(){
+ const q=$('catalogSearch').value.trim().toLowerCase(),fid=$('catalogFriend').value;
+ const owned=new Set(catalogOwned.filter(x=>x.friend_id===fid).map(x=>x.flower_id));
+ const mode=$('catalogOwnedFilter').value;
+ const arr=catalogFlowers.filter(f=>(!q||f.name.toLowerCase().includes(q))&&(!fid||mode==='all'||(mode==='owned'?owned.has(f.id):!owned.has(f.id))));
+ const editable=!!user&&!!fid&&(isAdmin||myFriendId===fid)&&!catalogError;
+ $('catalogStatus').textContent=(catalogError?catalogError+' ｜ ':'')+`共 ${catalogFlowers.length} 種花，目前顯示 ${arr.length} 種。`+(fid?` ${editable?'可以勾選收藏。':'此好友的收藏為唯讀。'}`:' 選擇好友後可查看收藏狀態。');
+ $('catalogGrid').innerHTML=arr.length?arr.map(f=>`<article class="card catalog-card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3>${fid?`<label class="catalog-check"><input type="checkbox" data-flower-id="${esc(f.id)}" ${owned.has(f.id)?'checked':''} ${editable?'':'disabled'}>我擁有這種花</label>`:''}</article>`).join(''):'<div class="empty">沒有符合條件的花種。</div>';
+ $('catalogGrid').querySelectorAll('input[data-flower-id]').forEach(input=>input.addEventListener('change',()=>toggleCatalogOwned(input,fid)));
+}
+async function toggleCatalogOwned(input,fid){
+ if(!user||!(isAdmin||myFriendId===fid))return;
+ const id=input.dataset.flowerId,checked=input.checked;input.disabled=true;
+ const result=checked?await sb.from('flower_catalog_ownership').insert({flower_id:id,friend_id:fid}):await sb.from('flower_catalog_ownership').delete().eq('flower_id',id).eq('friend_id',fid);
+ if(result.error){input.checked=!checked;alert('收藏儲存失敗：'+result.error.message);}
+ else{catalogOwned=catalogOwned.filter(x=>!(x.flower_id===id&&x.friend_id===fid));if(checked)catalogOwned.push({flower_id:id,friend_id:fid});}
+ renderCatalog();
+}
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>view(b.dataset.view));$('search').oninput=renderFlowers;$('friendFilter').onchange=renderFlowers;$('catalogSearch').oninput=renderCatalog;$('catalogFriend').onchange=renderCatalog;$('catalogOwnedFilter').onchange=renderCatalog;
 (async()=>{let c=config();$('sbUrl').value=c.url;$('sbKey').value=c.key;if(c.url&&c.key)await initCloud()})();
 </script>
 </body></html>
