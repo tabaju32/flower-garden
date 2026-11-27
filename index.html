@@ -54,9 +54,9 @@ header h1 {
  <details class="panel"><summary>⚙ 管理員登入</summary><div class="authbar"><div><b id="authState">尚未登入</b><div class="small" id="roleState">公開訪客可瀏覽；只有管理員可以編輯。</div></div><span class="badge" id="permissionBadge">公開瀏覽</span></div><div class="row" style="margin-top:13px"><div class="field"><label>電子郵件</label><input id="email" type="email" placeholder="name@example.com"></div><div class="field"><label>密碼</label><input id="password" type="password" placeholder="至少 6 個字元"></div><button class="primary" onclick="signIn()">登入</button><button class="soft" onclick="signUp()">註冊帳號</button><button class="rose hidden" id="logoutBtn" onclick="signOut()">登出</button></div><p class="small">訪客無須登入；只有管理員帳號可以編輯。</p></details>
  <nav class="tabs"><button class="tab active" data-view="catalog">✿ 花種收藏</button><button class="tab" data-view="allflowers">🌸 完整花種圖鑑</button><button class="tab" data-view="friends">♡ 好友名單</button><button class="tab" data-view="settings">⚙ 管理設定</button></nav>
  <section id="catalogView"><div class="panel"><div class="filters"><div class="field"><label>搜尋花名</label><input id="search" placeholder="輸入花朵名稱…"></div><div class="field"><label>依好友篩選</label><select id="friendFilter"><option value="">所有好友</option></select></div></div></div>
- <div class="row" style="justify-content:space-between;margin:17px 2px 8px"><h2 style="font:22px Georgia,serif;margin:0">花朵收藏 <span class="small" id="countLabel"></span></h2><button class="rose editor-only hidden" onclick="openFlower()">＋ 新增花種</button></div><div id="flowerGrid" class="grid"></div></section>
+ <div class="row" style="justify-content:space-between;margin:17px 2px 8px"><h2 style="font:22px Georgia,serif;margin:0">原有花種收藏 <span class="small" id="countLabel"></span></h2><button class="rose editor-only hidden" onclick="openFlower()">＋ 新增花種</button></div><p class="small">此區顯示原本 flowers 資料表的花種紀錄；與「完整花種圖鑑」的 166 種及其勾選狀態分開保存，不會自動合併。</p><div id="flowerGrid" class="grid"></div></section>
  <section id="allflowersView" class="hidden">
-  <div class="panel"><h2>🌸 完整花種圖鑑</h2><p class="small">搜尋花種，選擇好友後可查看與勾選收藏。未登入時可瀏覽。</p>
+  <div class="panel"><h2>🌸 完整花種圖鑑</h2><p class="small">搜尋 166 種花，選擇好友後可查看與勾選新版收藏。原本 2 筆花種紀錄請到「花種收藏」查看；兩者不會自動合併。未登入時可瀏覽。</p>
    <div class="row"><div class="field"><label for="catalogSearch">搜尋花種名稱</label><input id="catalogSearch" placeholder="輸入花種名稱…"></div>
    <div class="field"><label for="catalogFriend">選擇好友</label><select id="catalogFriend"><option value="">全部花種</option></select></div>
    <div class="field"><label for="catalogOwnedFilter">收藏狀態</label><select id="catalogOwnedFilter"><option value="all">全部</option><option value="owned">已擁有</option><option value="missing">尚未擁有</option></select></div></div>
@@ -95,21 +95,18 @@ async function loadData(){if(!sb)return;let [fr,fl,links]=await Promise.all([sb.
 function render(){ $('friendCount').textContent=friends.length;$('flowerCount').textContent=new Set(flowers.map(f=>f.name.toLowerCase())).size;$('recordCount').textContent=flowers.length;$('fFriends').innerHTML=friends.map(f=>`<label class="friend-choice"><input type="checkbox" value="${f.id}">${esc(f.name)}</label>`).join('');renderFlowers();$('friendsList').innerHTML=friends.length?friends.map(f=>`<article class="card"><b>♡ ${esc(f.name)}</b><p>${flowers.filter(x=>friendIds(x).includes(f.id)).length} 筆花種紀錄</p>${isAdmin?`<div class="actions"><button class="danger" onclick="deleteFriend('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">目前還沒有好友資料。</div>'}
 function renderFlowers(){
  const q=$('search').value.trim().toLowerCase();
- const matching=flowers.filter(f=>!q||f.name.toLowerCase().includes(q));
- const owned=new Set(matching.flatMap(friendIds));
+ const matching=flowers.filter(f=>!q||String(f.name||'').toLowerCase().includes(q));
  const filter=$('friendFilter');
  const prev=filter.value;
- const eligible=friends.filter(f=>!q||owned.has(f.id));
- filter.innerHTML=eligible.length
-   ? eligible.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('')
-   : '<option value="">沒有符合的好友</option>';
- filter.value=eligible.some(f=>f.id===prev)?prev:(eligible[0]?.id||'');
- filter.disabled=!eligible.length;
+ // 保留「所有好友」，不因搜尋而重建／改選特定好友。
+ filter.innerHTML='<option value="">所有好友</option>'+friends.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('');
+ filter.value=prev&&friends.some(f=>f.id===prev)?prev:'';
  const fid=filter.value;
  const arr=matching.filter(f=>!fid||friendIds(f).includes(fid));
- $('countLabel').textContent=`（${arr.length} 筆）`;
+ $('countLabel').textContent=`（${arr.length} 筆；原始紀錄共 ${flowers.length} 筆）`;
  $('flowerGrid').innerHTML=arr.length?arr.map(f=>`<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ ${esc(friendIds(f).map(friendName).join('、')||'未指定好友')}</p>${canManage(f)?`<div class="actions"><button class="soft" onclick="editFlower('${f.id}')">編輯</button><button class="danger" onclick="deleteFlower('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">❀<br>目前沒有符合條件的花種紀錄。</div>';
 }
+
 function friendIds(f){let ids=flowerLinks.filter(x=>x.flower_id===f.id).map(x=>x.friend_id);return ids.length?ids:(f.friend_id?[f.friend_id]:[])}
 function friendName(id){return friends.find(f=>f.id===id)?.name||'未指定好友'}
 function openFlower(f=null){if(!isAdmin)return alert('只有管理員可以編輯');if(f&&!canManage(f))return alert('只能編輯自己的收藏');if(!friends.length)return alert('請先新增好友資料');editing=f?.id||null;$('dialogTitle').textContent=f?'編輯花種':'新增花種';let selected=f?friendIds(f):[friends[0].id];document.querySelectorAll('#fFriends input').forEach(x=>x.checked=selected.includes(x.value));$('fName').value=f?.name||'';$('fImageFile').value='';$('removeImage').checked=false;showImagePreview(f?.image_url||'');$('modal').classList.remove('hidden')}
