@@ -54,9 +54,11 @@ header h1 {
  <details class="panel"><summary>⚙ 管理員登入</summary><div class="authbar"><div><b id="authState">尚未登入</b><div class="small" id="roleState">公開訪客可瀏覽；只有管理員可以編輯。</div></div><span class="badge" id="permissionBadge">公開瀏覽</span></div><div class="row" style="margin-top:13px"><div class="field"><label>電子郵件</label><input id="email" type="email" placeholder="name@example.com"></div><div class="field"><label>密碼</label><input id="password" type="password" placeholder="至少 6 個字元"></div><button class="primary" onclick="signIn()">登入</button><button class="soft" onclick="signUp()">註冊帳號</button><button class="rose hidden" id="logoutBtn" onclick="signOut()">登出</button></div><p class="small">訪客無須登入；只有管理員帳號可以編輯。</p></details>
  <nav class="tabs"><button class="tab active" data-view="catalog">✿ 花種收藏</button><button class="tab" data-view="allflowers">🌸 完整花種圖鑑</button><button class="tab" data-view="friends">♡ 好友名單</button><button class="tab" data-view="settings">⚙ 管理設定</button></nav>
  <section id="catalogView"><div class="panel"><div class="filters"><div class="field"><label>搜尋花名</label><input id="search" placeholder="輸入花朵名稱…"></div><div class="field"><label>依好友篩選</label><select id="friendFilter"><option value="">所有好友</option></select></div></div></div>
- <div class="row" style="justify-content:space-between;margin:17px 2px 8px"><h2 style="font:22px Georgia,serif;margin:0">原有花種收藏 <span class="small" id="countLabel"></span></h2><button class="rose editor-only hidden" onclick="openFlower()">＋ 新增花種</button></div><p class="small">此區顯示原本 flowers 資料表的花種紀錄；與「完整花種圖鑑」的 166 種及其勾選狀態分開保存，不會自動合併。</p><div id="flowerGrid" class="grid"></div><div id="catalogOwnerResults" class="hidden"><h2 style="font:21px Georgia,serif;margin:22px 2px 8px">完整圖鑑收藏查詢 <span class="small" id="catalogOwnerCount"></span></h2><p class="small">搜尋花名，即可查看哪些好友已在 166 種圖鑑中勾選收藏。原本的 2 筆舊紀錄仍保留在上方。</p><div id="catalogOwnerGrid" class="grid"></div></div></section>
+ <p class="small">與「完整花種圖鑑」共用 166 種花與好友收藏資料。輸入花名，即可查看擁有者；在完整圖鑑勾選後，這裡會同步更新。</p>
+ <div id="catalogOwnerResults"><h2 style="font:21px Georgia,serif;margin:22px 2px 8px">花種擁有者查詢 <span class="small" id="catalogOwnerCount"></span></h2><div id="catalogOwnerGrid" class="grid"></div></div>
+ <div id="legacyFlowerRender" class="hidden" aria-hidden="true"><span id="countLabel"></span><div id="flowerGrid"></div></div></section>
  <section id="allflowersView" class="hidden">
-  <div class="panel"><h2>🌸 完整花種圖鑑</h2><p class="small">搜尋 166 種花，選擇好友後可查看與勾選新版收藏。原本 2 筆花種紀錄請到「花種收藏」查看；兩者不會自動合併。未登入時可瀏覽。</p>
+  <div class="panel"><h2>🌸 完整花種圖鑑</h2><p class="small">與「花種收藏」共用 166 種花及好友收藏紀錄。選擇好友後預設只顯示已擁有的花；也可切換全部或尚未擁有。</p>
    <div class="row"><div class="field"><label for="catalogSearch">搜尋花種名稱</label><input id="catalogSearch" placeholder="輸入花種名稱…"></div>
    <div class="field"><label for="catalogFriend">選擇好友</label><select id="catalogFriend"><option value="">全部花種</option></select></div>
    <div class="field"><label for="catalogOwnedFilter">收藏狀態</label><select id="catalogOwnedFilter"><option value="all">全部</option><option value="owned">已擁有</option><option value="missing">尚未擁有</option></select></div></div>
@@ -92,7 +94,7 @@ async function signIn(){if(!sb)return alert('請先在管理設定完成雲端�
 async function signUp(){if(!sb)return alert('請先在管理設定完成雲端連線');let {error}=await sb.auth.signUp({email:$('email').value,password:$('password').value});if(error)alert(error.message);else alert('註冊申請已送出。請依 Supabase 郵件設定完成驗證，再請管理者授予編輯權。')}
 async function signOut(){await sb.auth.signOut()}
 async function loadData(){if(!sb)return;let [fr,fl,links]=await Promise.all([sb.from('friends').select('*').order('name'),sb.from('flowers').select('*').order('created_at',{ascending:false}),sb.from('flower_friends').select('flower_id,friend_id')]);if(fr.error||fl.error||links.error){const e=fr.error||fl.error||links.error;setNotice('舊資料讀取失敗：'+e.message+'（'+(e.code||'無錯誤代碼')+'）。');await loadCatalog();return}friends=fr.data||[];flowers=fl.data||[];flowerLinks=links.data||[];setNotice('雲端已連線。');render();await loadCatalog()}
-function render(){ $('friendCount').textContent=friends.length;$('flowerCount').textContent=new Set(flowers.map(f=>f.name.toLowerCase())).size;$('recordCount').textContent=flowers.length;$('fFriends').innerHTML=friends.map(f=>`<label class="friend-choice"><input type="checkbox" value="${f.id}">${esc(f.name)}</label>`).join('');renderFlowers();$('friendsList').innerHTML=friends.length?friends.map(f=>`<article class="card"><b>♡ ${esc(f.name)}</b><p>${flowers.filter(x=>friendIds(x).includes(f.id)).length} 筆花種紀錄</p>${isAdmin?`<div class="actions"><button class="danger" onclick="deleteFriend('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">目前還沒有好友資料。</div>'}
+function render(){ $('friendCount').textContent=friends.length;$('flowerCount').textContent=catalogFlowers.length;$('recordCount').textContent=catalogOwned.length;$('fFriends').innerHTML=friends.map(f=>`<label class="friend-choice"><input type="checkbox" value="${f.id}">${esc(f.name)}</label>`).join('');renderFlowers();$('friendsList').innerHTML=friends.length?friends.map(f=>`<article class="card"><b>♡ ${esc(f.name)}</b><p>${flowers.filter(x=>friendIds(x).includes(f.id)).length} 筆花種紀錄</p>${isAdmin?`<div class="actions"><button class="danger" onclick="deleteFriend('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">目前還沒有好友資料。</div>'}
 function renderFlowers(){
  const q=$('search').value.trim().toLowerCase();
  const matching=flowers.filter(f=>!q||String(f.name||'').toLowerCase().includes(q));
@@ -111,9 +113,8 @@ function renderFlowers(){
 function renderCatalogOwners(){
  const q=$('search').value.trim().toLowerCase(),fid=$('friendFilter').value;
  const section=$('catalogOwnerResults');
- if(!q){section.classList.add('hidden');return;}
  section.classList.remove('hidden');
- const arr=catalogFlowers.filter(f=>String(f.name||'').toLowerCase().includes(q));
+ const arr=catalogFlowers.filter(f=>!q||String(f.name||'').toLowerCase().includes(q));
  $('catalogOwnerCount').textContent=`（符合 ${arr.length} 種）`;
  $('catalogOwnerGrid').innerHTML=arr.length?arr.map(f=>{
   const ids=[...new Set(catalogOwned.filter(x=>x.flower_id===f.id).map(x=>x.friend_id))];
@@ -170,6 +171,8 @@ async function loadCatalog(){
  if(select.value) $('catalogOwnedFilter').value='owned';
  renderCatalog();
  renderCatalogOwners();
+ $('flowerCount').textContent=catalogFlowers.length;
+ $('recordCount').textContent=catalogOwned.length;
 }
 function renderCatalog(){
  const q=$('catalogSearch').value.trim().toLowerCase(),fid=$('catalogFriend').value;
@@ -189,6 +192,7 @@ async function toggleCatalogOwned(input,fid){
  else{catalogOwned=catalogOwned.filter(x=>!(x.flower_id===id&&x.friend_id===fid));if(checked)catalogOwned.push({flower_id:id,friend_id:fid});}
  renderCatalog();
  renderCatalogOwners();
+ $('recordCount').textContent=catalogOwned.length;
 }
 
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>view(b.dataset.view));$('search').oninput=renderFlowers;$('friendFilter').onchange=renderFlowers;$('catalogSearch').oninput=renderCatalog;$('catalogFriend').onchange=()=>{$('catalogOwnedFilter').value=$('catalogFriend').value?'owned':'all';renderCatalog();};$('catalogOwnedFilter').onchange=renderCatalog;
