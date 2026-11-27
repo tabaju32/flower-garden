@@ -52,6 +52,44 @@ header h1 {
 .discreet-admin-login[open]>summary{cursor:pointer;}
 .stats{grid-template-columns:repeat(2,minmax(0,1fr));}
 .stats>.stat:nth-child(3){display:none;}
+
+/* V11: mobile flower-card layout only; desktop and data logic unchanged */
+@media (max-width: 620px) {
+  #flowerGrid, #catalogOwnerGrid, #catalogGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  #flowerGrid .card, #catalogOwnerGrid .card, #catalogGrid .card {
+    min-width: 0;
+    padding: 9px;
+    border-radius: 13px;
+  }
+  #flowerGrid .pic, #catalogOwnerGrid .pic, #catalogGrid .pic {
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 9px;
+  }
+  #flowerGrid .card h3, #catalogOwnerGrid .card h3, #catalogGrid .card h3 {
+    font-size: 15px;
+    line-height: 1.45;
+    margin: 8px 0 4px;
+    overflow-wrap: anywhere;
+  }
+  #flowerGrid .card p, #catalogOwnerGrid .card p {
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  #catalogGrid .catalog-check {font-size: 12px;line-height: 1.45;gap: 6px;align-items:center;}
+  #catalogGrid .catalog-check input {flex: 0 0 20px;width:20px;height:20px;}
+  #flowerGrid .actions {flex-wrap: wrap;gap: 6px;}
+  #flowerGrid .actions button {padding: 7px 9px;}
+}
+@media (max-width: 350px) {
+  #flowerGrid, #catalogOwnerGrid, #catalogGrid {gap: 7px;}
+  #flowerGrid .card, #catalogOwnerGrid .card, #catalogGrid .card {padding: 7px;}
+  #flowerGrid .card h3, #catalogOwnerGrid .card h3, #catalogGrid .card h3 {font-size: 14px;}
+}
 </style>
 <!-- Supabase client library -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
