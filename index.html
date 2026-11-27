@@ -96,6 +96,34 @@ header h1 {
   #catalogOwnerGrid .card, #catalogGrid .card, #flowerGrid .card { align-self: start; height: auto; }
   #catalogOwnerGrid .card p, #flowerGrid .card p { overflow-wrap: anywhere; word-break: normal; }
 }
+
+/* V13: mobile-only two-column masonry layout.
+   The existing sorted DOM order and all card event handlers remain unchanged.
+   CSS multi-column layout reads top-to-bottom in each column. */
+@media (max-width: 620px) {
+  #catalogOwnerGrid, #catalogGrid, #flowerGrid {
+    display: block;
+    columns: 2;
+    column-gap: 10px;
+  }
+  #catalogOwnerGrid > .card, #catalogGrid > .card, #flowerGrid > .card {
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+    vertical-align: top;
+    margin: 0 0 10px;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #catalogOwnerGrid > .empty, #catalogGrid > .empty, #flowerGrid > .empty {
+    column-span: all;
+  }
+}
+@media (max-width: 350px) {
+  #catalogOwnerGrid, #catalogGrid, #flowerGrid {column-gap: 7px;}
+  #catalogOwnerGrid > .card, #catalogGrid > .card, #flowerGrid > .card {margin-bottom: 7px;}
+}
 </style>
 <!-- Supabase client library -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
