@@ -52,9 +52,9 @@ header h1 {
  <div class="notice" id="connectionNotice">目前尚未設定雲端資料庫。完成下方「管理設定」中的 Supabase 設定後，即可啟用好友共享。未設定時不會假裝資料已同步。</div>
  <section class="stats"><div class="stat"><strong id="friendCount">0</strong><span>位好友</span></div><div class="stat"><strong id="flowerCount">0</strong><span>種花朵</span></div><div class="stat"><strong id="recordCount">0</strong><span>筆花種紀錄</span></div></section>
  <details class="panel"><summary>⚙ 管理員登入</summary><div class="authbar"><div><b id="authState">尚未登入</b><div class="small" id="roleState">公開訪客可瀏覽；只有管理員可以編輯。</div></div><span class="badge" id="permissionBadge">公開瀏覽</span></div><div class="row" style="margin-top:13px"><div class="field"><label>電子郵件</label><input id="email" type="email" placeholder="name@example.com"></div><div class="field"><label>密碼</label><input id="password" type="password" placeholder="至少 6 個字元"></div><button class="primary" onclick="signIn()">登入</button><button class="soft" onclick="signUp()">註冊帳號</button><button class="rose hidden" id="logoutBtn" onclick="signOut()">登出</button></div><p class="small">訪客無須登入；只有管理員帳號可以編輯。</p></details>
- <nav class="tabs"><button class="tab active" data-view="catalog">✿ 花種收藏</button><button class="tab" data-view="allflowers">🌸 完整花種圖鑑</button><button class="tab" data-view="friends">♡ 好友名單</button><button class="tab" data-view="settings">⚙ 管理設定</button></nav>
+ <nav class="tabs"><button class="tab active" data-view="catalog">✿ 花種收藏</button><button class="tab admin-tab hidden" data-view="allflowers">🌸 完整花種圖鑑</button><button class="tab admin-tab hidden" data-view="friends">♡ 好友名單</button><button class="tab admin-tab hidden" data-view="settings">⚙ 管理設定</button></nav>
  <section id="catalogView"><div class="panel"><div class="filters"><div class="field"><label>搜尋花名</label><input id="search" placeholder="輸入花朵名稱…"></div><div class="field"><label>依好友篩選</label><select id="friendFilter"><option value="">所有好友</option></select></div></div></div>
- <p class="small">與「完整花種圖鑑」共用 166 種花與好友收藏資料。輸入花名，即可查看擁有者；在完整圖鑑勾選後，這裡會同步更新。</p>
+ <p class="small">選擇好友後，只顯示該好友已擁有的花種及擁有者；選擇所有好友則顯示全部已收藏花種。</p>
  <div id="catalogOwnerResults"><h2 style="font:21px Georgia,serif;margin:22px 2px 8px">花種擁有者查詢 <span class="small" id="catalogOwnerCount"></span></h2><div id="catalogOwnerGrid" class="grid"></div></div>
  <div id="legacyFlowerRender" class="hidden" aria-hidden="true"><span id="countLabel"></span><div id="flowerGrid"></div></div></section>
  <section id="allflowersView" class="hidden">
@@ -88,6 +88,8 @@ async function refreshAuth(){
  $('logoutBtn').classList.toggle('hidden',!user);
  document.querySelectorAll('.editor-only').forEach(x=>x.classList.toggle('hidden',!isAdmin));
  document.querySelectorAll('.admin-only').forEach(x=>x.classList.toggle('hidden',!isAdmin));
+ document.querySelectorAll('.admin-tab').forEach(x=>x.classList.toggle('hidden',!isAdmin));
+ if(!isAdmin)view('catalog');
 }
 function canManage(f){return !!(isAdmin&&f);}
 async function signIn(){if(!sb)return alert('請先在管理設定完成雲端連線');let {error}=await sb.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(error)alert(error.message)}
@@ -114,13 +116,22 @@ function renderCatalogOwners(){
  const q=$('search').value.trim().toLowerCase(),fid=$('friendFilter').value;
  const section=$('catalogOwnerResults');
  section.classList.remove('hidden');
- const arr=catalogFlowers.filter(f=>!q||String(f.name||'').toLowerCase().includes(q));
- $('catalogOwnerCount').textContent=`（符合 ${arr.length} 種）`;
+ const ownedByFlower=new Map();
+ for(const link of catalogOwned){
+  if(!friends.some(f=>f.id===link.friend_id))continue;
+  if(!ownedByFlower.has(link.flower_id))ownedByFlower.set(link.flower_id,new Set());
+  ownedByFlower.get(link.flower_id).add(link.friend_id);
+ }
+ const arr=catalogFlowers.filter(f=>{
+  const owners=ownedByFlower.get(f.id);
+  return (!q||String(f.name||'').toLowerCase().includes(q)) && owners && owners.size>0 && (!fid||owners.has(fid));
+ });
+ $('catalogOwnerCount').textContent=`（${arr.length} 種已擁有）`;
  $('catalogOwnerGrid').innerHTML=arr.length?arr.map(f=>{
-  const ids=[...new Set(catalogOwned.filter(x=>x.flower_id===f.id).map(x=>x.friend_id))];
-  const shown=fid?ids.filter(id=>id===fid):ids;
-  return `<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ ${shown.length?esc(shown.map(friendName).join('、')):(fid?'此好友尚未擁有':'尚無好友收藏')}</p></article>`;
- }).join(''):'<div class="empty">完整圖鑑中沒有符合的花種。</div>';
+  const owners=ownedByFlower.get(f.id);
+  const shown=fid?[fid]:[...owners];
+  return `<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ 擁有者：${esc(shown.map(friendName).join('、'))}</p></article>`;
+ }).join(''):'<div class="empty">目前沒有符合條件的已收藏花種。</div>';
 }
 
 function friendIds(f){let ids=flowerLinks.filter(x=>x.flower_id===f.id).map(x=>x.friend_id);return ids.length?ids:(f.friend_id?[f.friend_id]:[])}
@@ -170,7 +181,7 @@ async function editFriend(id){
  alert('好友名稱已更新，原本的花種收藏紀錄已保留。');
 }
 async function deleteFriend(id){if(!isAdmin)return alert('僅管理員可以刪除好友');if(!confirm('確定刪除好友及其花種紀錄？'))return;let {error}=await sb.from('friends').delete().eq('id',id);if(error)alert(error.message);else await loadData()}
-function view(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['catalog','allflowers','friends','settings'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v))}
+function view(v){if(!isAdmin&&v!=='catalog')v='catalog';document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['catalog','allflowers','friends','settings'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v))}
 
 // 完整花種圖鑑：與原有 flowers / flower_friends 資料完全分開。
 async function loadCatalog(){
@@ -187,6 +198,7 @@ async function loadCatalog(){
  if(select.value) $('catalogOwnedFilter').value='owned';
  renderCatalog();
  renderCatalogOwners();
+ render();
  $('flowerCount').textContent=catalogFlowers.length;
  $('recordCount').textContent=catalogOwned.length;
 }
