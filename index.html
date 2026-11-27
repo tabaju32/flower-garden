@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f7f3eb"><title>花神花種圖鑑｜好友共享版</title>
+<meta name="theme-color" content="#f7f3eb"><meta name="flower-version" content="owned-filter-2026-11-27-v2"><title>花神花種圖鑑｜好友共享版</title>
 <style>
 :root{--ink:#34443b;--muted:#7d897f;--cream:#f7f5ef;--paper:#fffefa;--pink:#e9b9b5;--rose:#a96568;--sage:#b8c9b5;--line:#e8e6dc;--shadow:0 12px 35px #46554412}
 *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:"Noto Sans TC","PingFang TC",system-ui,sans-serif}
@@ -113,29 +113,37 @@ function renderFlowers(){
 }
 
 function renderCatalogOwners(){
- const q=$('search').value.trim().toLowerCase(),fid=$('friendFilter').value;
- const section=$('catalogOwnerResults');
- section.classList.remove('hidden');
- const ownedByFlower=new Map();
- for(const link of catalogOwned){
-  if(!friends.some(f=>f.id===link.friend_id))continue;
-  if(!ownedByFlower.has(link.flower_id))ownedByFlower.set(link.flower_id,new Set());
-  ownedByFlower.get(link.flower_id).add(link.friend_id);
+ const q=$('search').value.trim().toLocaleLowerCase();
+ const selectedFriendId=$('friendFilter').value;
+ const selectedFriend=friends.find(f=>String(f.id)===String(selectedFriendId));
+ const ownershipByFlower=new Map();
+ for(const record of catalogOwned){
+  const flowerId=String(record.flower_id), friendId=String(record.friend_id);
+  if(!friends.some(f=>String(f.id)===friendId))continue;
+  if(!ownershipByFlower.has(flowerId))ownershipByFlower.set(flowerId,new Set());
+  ownershipByFlower.get(flowerId).add(friendId);
  }
- const arr=catalogFlowers.filter(f=>{
-  const owners=ownedByFlower.get(f.id);
-  return (!q||String(f.name||'').toLowerCase().includes(q)) && owners && owners.size>0 && (!fid||owners.has(fid));
- });
- $('catalogOwnerCount').textContent=`（${arr.length} 種已擁有）`;
- $('catalogOwnerGrid').innerHTML=arr.length?arr.map(f=>{
-  const owners=ownedByFlower.get(f.id);
-  const shown=fid?[fid]:[...owners];
+ // 先從收藏關聯表取得「這位好友真正擁有的花種 ID」，再顯示卡片。
+ const ownedIds=new Set();
+ for(const [flowerId,owners] of ownershipByFlower){
+  if(!selectedFriendId || owners.has(String(selectedFriendId)))ownedIds.add(flowerId);
+ }
+ const visibleFlowers=catalogFlowers.filter(f=>
+  ownedIds.has(String(f.id)) && (!q||String(f.name||'').toLocaleLowerCase().includes(q))
+ );
+ const status=selectedFriend
+  ? `（${esc(selectedFriend.name)}已擁有 ${visibleFlowers.length} 種；未擁有的已隱藏）`
+  : `（所有好友已收藏 ${visibleFlowers.length} 種；未收藏的已隱藏）`;
+ $('catalogOwnerCount').innerHTML=status;
+ $('catalogOwnerGrid').innerHTML=visibleFlowers.length?visibleFlowers.map(f=>{
+  const owners=ownershipByFlower.get(String(f.id))||new Set();
+  const shown=selectedFriendId?[String(selectedFriendId)]:[...owners];
   return `<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ 擁有者：${esc(shown.map(friendName).join('、'))}</p></article>`;
- }).join(''):'<div class="empty">目前沒有符合條件的已收藏花種。</div>';
+ }).join(''):'<div class="empty">這位好友目前沒有符合條件的已擁有花種。</div>';
 }
 
 function friendIds(f){let ids=flowerLinks.filter(x=>x.flower_id===f.id).map(x=>x.friend_id);return ids.length?ids:(f.friend_id?[f.friend_id]:[])}
-function friendName(id){return friends.find(f=>f.id===id)?.name||'未指定好友'}
+function friendName(id){return friends.find(f=>String(f.id)===String(id))?.name||'未指定好友'}
 function openFlower(f=null){if(!isAdmin)return alert('只有管理員可以編輯');if(f&&!canManage(f))return alert('只能編輯自己的收藏');if(!friends.length)return alert('請先新增好友資料');editing=f?.id||null;$('dialogTitle').textContent=f?'編輯花種':'新增花種';let selected=f?friendIds(f):[friends[0].id];document.querySelectorAll('#fFriends input').forEach(x=>x.checked=selected.includes(x.value));$('fName').value=f?.name||'';$('fImageFile').value='';$('removeImage').checked=false;showImagePreview(f?.image_url||'');$('modal').classList.remove('hidden')}
 function editFlower(id){openFlower(flowers.find(x=>x.id===id))}function closeModal(){$('modal').classList.add('hidden')}
 function showImagePreview(url){$('imagePreview').innerHTML=url?`<img src="${esc(url)}" alt="圖片預覽">`:'🌷';}
