@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f7f3eb"><meta name="flower-version" content="quality-sorting-v8"><title>花神宮競賽用花種圖鑑</title>
+<meta name="theme-color" content="#f7f3eb"><meta name="flower-version" content="admin-catalog-v18"><title>花神宮競賽用花種圖鑑</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="花神宮競賽用花種圖鑑">
 <meta property="og:description" content="花神宮競賽花種收藏與好友共享圖鑑">
@@ -16,7 +16,7 @@ main{padding:24px 18px 55px}.notice{border:1px solid #e6d8c9;background:#fff8ef;
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.tab,button{border:0;border-radius:99px;padding:10px 16px;font:inherit;cursor:pointer}.tab{background:#e9ece5;color:#657267}.tab.active,.primary{background:var(--ink);color:white}.soft{background:#e9eee6;color:#4c6252}.rose{background:#f2e2df;color:#8c5559}.danger{background:#f7e7e4;color:#9b514d}.panel{padding:19px;margin:13px 0}.panel h2{font:21px Georgia,"Noto Serif TC",serif;margin:0 0 14px}.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}.field label{font-size:12px;color:var(--muted)}.friend-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px;padding:12px;border:1px solid #dedfd5;border-radius:11px}.friend-choice{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #e8e6dc;border-radius:10px;font-size:15px!important;color:var(--ink)!important}.friend-choice input{width:18px;height:18px;accent-color:var(--ink)}input,select,textarea{width:100%;padding:11px 12px;border:1px solid #dedfd5;border-radius:11px;background:#fffefa;color:var(--ink);font:inherit}.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.row .field{flex:1 1 180px}.filters{display:grid;grid-template-columns:2fr 1fr;gap:10px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-top:14px}.card{padding:14px}.pic{height:190px;border-radius:12px;background:linear-gradient(140deg,#f8eee8,#edf2e9);display:grid;place-items:center;font-size:43px;overflow:hidden}.pic img{width:100%;height:100%;object-fit:cover}.card h3{margin:11px 0 4px}.card p{font-size:13px;color:var(--muted);margin:5px 0}.tag{display:inline-block;background:#edf1e9;color:#62735f;padding:4px 9px;border-radius:99px;font-size:11px;margin-top:6px}.actions{display:flex;gap:7px;margin-top:12px}.actions button{font-size:12px;padding:7px 11px}.hidden{display:none!important}.empty{text-align:center;padding:38px 10px;color:var(--muted);grid-column:1/-1}.small{font-size:12px;color:var(--muted);line-height:1.7}.authbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.badge{font-size:12px;border-radius:99px;background:#edf1e9;padding:6px 10px;color:#566c59}.modal{position:fixed;inset:0;background:#25352f66;display:grid;place-items:center;padding:16px;z-index:5}.dialog{background:var(--paper);border-radius:19px;padding:21px;width:min(500px,100%);max-height:90vh;overflow:auto}.dialog h2{margin-top:0}.end{text-align:center;color:#9aa398;font-size:12px;margin-top:30px}
 @media(max-width:620px){.mark{font-size:48px}.stats{gap:7px}.stat{padding:11px}.stat strong{font-size:24px}.filters{grid-template-columns:1fr}.panel{padding:15px}}
 header{
-  background-image:url('file_00000000925c82069c43ec920d9470fa.png');
+  /* 暫不使用不存在的本機背景圖；沿用上方原有漸層背景。 */
   background-size:cover;
   background-position:center;
   background-attachment:fixed;
@@ -123,6 +123,10 @@ header h1 {
   #catalogOwnerGrid.v14-masonry, #catalogGrid.v14-masonry, #flowerGrid.v14-masonry,
   .v14-masonry > .v14-column {gap:7px;}
 }
+/* V18 admin-only catalog management */
+.quality-tag{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;background:#edf1e9;color:#566c59}
+.quality-tag.tian{background:#f9e7e7;color:#a33d55}.quality-tag.xian{background:#f5e5ea;color:#98546b}.quality-tag.hua{background:#fff0dc;color:#a36d2f}
+.catalog-admin-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.catalog-admin-actions button{font-size:12px;padding:7px 10px}
 </style>
 <!-- Supabase client library -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -144,7 +148,7 @@ header h1 {
    <div class="field"><label for="catalogFriend">選擇好友</label><select id="catalogFriend"><option value="">全部花種</option></select></div>
    <div class="field"><label for="catalogOwnedFilter">收藏狀態</label><select id="catalogOwnedFilter"><option value="all">全部</option><option value="owned">已擁有</option><option value="missing">尚未擁有</option></select></div></div>
    <p id="catalogStatus" class="small" role="status">正在等待圖鑑資料載入…</p>
-  </div><div id="catalogGrid" class="grid"></div>
+  </div><div class="panel admin-only hidden" id="catalogAdminPanel"><div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin-bottom:4px">管理花種</h2><p class="small" style="margin:0">僅管理員可新增花種、上傳圖片及調整品質。</p></div><button class="primary" type="button" onclick="openCatalogEditor()">＋ 新增花種</button></div></div><div id="catalogGrid" class="grid"></div>
  </section>
  <section id="friendsView" class="hidden"><div class="panel"><h2>好友名單</h2><p class="small">好友名稱會顯示在花種紀錄中。同一種花可以同時收藏於多位好友名下，只有管理員可以修改。</p><div id="friendsList" class="grid"></div><div class="row admin-only hidden" style="margin-top:15px"><div class="field"><label>新增好友名稱</label><input id="friendName" placeholder="好友暱稱"></div><button class="primary" onclick="addFriend()">新增好友</button></div></div></section>
  <section id="settingsView" class="hidden"><div class="panel"><h2>雲端連線設定</h2><p class="small">建立 Supabase 專案後，填入 Project URL 與 anon/public key。這兩項可放在前端；絕不可填入 service_role key。</p><div class="field"><label>Supabase Project URL</label><input id="sbUrl" placeholder="https://xxxxxxxx.supabase.co"></div><div class="field" style="margin-top:10px"><label>Supabase anon / publishable key</label><input id="sbKey" placeholder="eyJ... 或 sb_publishable_..."></div><button class="primary" style="margin-top:12px" onclick="connectCloud()">儲存並連線</button><p class="small">連線設定只儲存在目前瀏覽器。若要讓每位好友使用同一個網站，請將這兩項寫入網站部署環境或由管理者完成設定。</p></div>
@@ -152,10 +156,12 @@ header h1 {
 
 </main>
 <div id="modal" class="modal hidden"><div class="dialog"><h2 id="dialogTitle">新增花種</h2><div class="field"><label>好友（可複選）</label><div id="fFriends" class="friend-checks"></div></div><div class="field" style="margin-top:10px"><label>花朵名稱</label><input id="fName" placeholder="花朵名稱"></div><div class="field" style="margin-top:10px"><label>花朵圖片（選填，從手機選擇）</label><input id="fImageFile" type="file" accept="image/*" onchange="previewImage()"><div id="imagePreview" class="pic" style="height:150px">🌷</div><label><input type="checkbox" id="removeImage" style="width:auto"> 移除原有圖片</label></div><div class="row" style="justify-content:flex-end;margin-top:17px"><button class="soft" onclick="closeModal()">取消</button><button class="primary" onclick="saveFlower()">儲存</button></div></div></div>
+<div id="catalogEditModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="catalogEditTitle"><div class="dialog"><h2 id="catalogEditTitle">新增花種</h2><div class="field"><label for="catalogEditName">花種名稱 *</label><input id="catalogEditName" maxlength="150" placeholder="輸入正式花名"></div><div class="field" style="margin-top:12px"><label for="catalogEditRarity">品質（管理員專用） *</label><select id="catalogEditRarity"><option value="天品">天品（最高）</option><option value="仙品">仙品</option><option value="華品" selected>華品</option></select></div><div class="field" style="margin-top:12px"><label for="catalogEditImage">上傳圖片（JPG / PNG / WebP / GIF，5MB 以下）</label><input id="catalogEditImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewCatalogEditImage()"></div><div id="catalogEditPreview" class="pic" style="height:160px;margin-top:10px">🌷</div><div class="field" style="margin-top:12px"><label for="catalogEditNote">管理員搜尋備註（選填）</label><textarea id="catalogEditNote" rows="3" maxlength="1000" placeholder="可填別名或搜尋關鍵字"></textarea></div><p class="small">新增花種會加入完整圖鑑，不會自動替任何好友勾選收藏。修改品質也不會更動好友收藏。</p><div class="row" style="justify-content:flex-end;margin-top:16px"><button class="soft" type="button" onclick="closeCatalogEditor()">取消</button><button class="primary" id="catalogEditSave" type="button" onclick="saveCatalogFlower()">儲存花種</button></div></div></div>
 <div id="searchNoteModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="searchNoteTitle"><div class="dialog"><h2 id="searchNoteTitle">編輯花種搜尋備註</h2><p class="small" id="searchNoteFlowerName"></p><div class="field" style="margin-top:12px"><label for="searchNoteInput">搜尋備註（可輸入多個別名或關鍵字）</label><textarea id="searchNoteInput" rows="4" maxlength="1000" placeholder="例如：小雪、綺窗、冬季"></textarea></div><p class="small">備註不會更改正式花名；訪客可透過備註搜尋花種。</p><div class="row" style="justify-content:flex-end;margin-top:16px"><button class="soft" type="button" onclick="closeSearchNoteModal()">取消</button><button class="primary" id="saveSearchNoteBtn" type="button" onclick="saveSearchNote()">儲存備註</button></div></div></div>
 <script>
 let sb=null,user=null,canEdit=false,isAdmin=false,myFriendId=null,flowers=[],friends=[],flowerLinks=[],editing=null,catalogFlowers=[],catalogOwned=[],catalogError="";
 let editingSearchNoteId=null;
+let editingCatalogId=null;
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function config(){return {url:localStorage.getItem('fg_url')||'https://wbpqdvvmnvugvtaoyejv.supabase.co',
 key:localStorage.getItem('fg_key')||'sb_publishable_W6QxN92yTUPEYGok_LQXYA_TIrMT57C'||''}}
@@ -214,7 +220,7 @@ function renderCatalogOwners(){
  }
  const visibleFlowers=catalogFlowers.filter(f=>
   ownedIds.has(String(f.id)) && matchesFlowerSearch(f,q)
- ).sort((a,b)=>flowerQualityRank(a.name)-flowerQualityRank(b.name)||a.name.localeCompare(b.name,'zh-Hant'));
+ ).sort((a,b)=>flowerQualityRank(a)-flowerQualityRank(b)||a.name.localeCompare(b.name,'zh-Hant'));
  const status=selectedFriend
   ? `（${esc(selectedFriend.name)}已擁有 ${visibleFlowers.length} 種；未擁有的已隱藏）`
   : `（所有好友已收藏 ${visibleFlowers.length} 種；未收藏的已隱藏）`;
@@ -222,7 +228,7 @@ function renderCatalogOwners(){
  $('catalogOwnerGrid').innerHTML=visibleFlowers.length?visibleFlowers.map(f=>{
   const owners=ownershipByFlower.get(String(f.id))||new Set();
   const shown=selectedFriendId?[String(selectedFriendId)]:[...owners];
-  return `<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ 擁有者：${esc(shown.map(friendName).join('、'))}</p>${searchNoteControls(f)}</article>`;
+  return `<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3>${qualityBadge(f)}<p>♡ 擁有者：${esc(shown.map(friendName).join('、'))}</p>${searchNoteControls(f)}${catalogEditControls(f)}</article>`;
  }).join(''):'<div class="empty">這位好友目前沒有符合條件的已擁有花種。</div>';
  scheduleMobileMasonry('catalogOwnerGrid');
 }
@@ -279,7 +285,7 @@ function view(v){if(!isAdmin&&v!=='catalog')v='catalog';document.querySelectorAl
 // 完整花種圖鑑：與原有 flowers / flower_friends 資料完全分開。
 async function loadCatalog(){
  const [c,o]=await Promise.all([
-  sb.from('flower_catalog').select('id,name,image_url,search_note').order('name').range(0,999),
+  sb.from('flower_catalog').select('id,name,image_url,search_note,rarity').order('name').range(0,999),
   sb.from('flower_catalog_ownership').select('flower_id,friend_id').range(0,9999)
  ]);
  catalogFlowers=c.data||[];catalogOwned=o.data||[];
@@ -300,7 +306,10 @@ const highestQualityFlowers=new Set(["紫霄雲庭", "金鱗飛渡", "星璿寰�
 const redQualityFlowers=new Set(["九色靈鹿", "仙魅靈狐", "夜夢花庭", "夢幻之心", "大暑·夏漪清歡", "天下 一墨", "小雪·綺窗花韻", "巧月·星眸應水", "扶搖雲鯤", "星垂綺夜", "星夜奇遇", "星河映蕊", "杏月·花影雅憩", "柳月·溪亭燕語", "桂月·秋千雅語", "桃月·雲汐灼華", "梅月·疏影聽弦", "榴月·絳花照影", "槐月·蝶夢輕語", "歡雪頌冬", "歡雲妙舞", "瑤光芙華", "碧羽青鸞", "福運招財", "秋分·楓華玉律", "緋夜薔歌", "緣定鵲橋", "繁花滿築", "花宴流芳", "花嶼閑趣", "花映長思", "花溪燈語", "花漾春山", "花澗聽泉", "花階聆音", "芳翎昭錦", "芳華尋蝶", "荷月·池光夏夢", "菊月·花間飛鳶", "葭月·棲舟泛漪", "處暑·花苑拾香", "陽月·芙香盈袖", "霜降·丹柿映輝", "飛花似夢"]);
 function matchesFlowerSearch(f,q){return !q||String(f.name||'').toLocaleLowerCase().includes(q)||String(f.search_note||'').toLocaleLowerCase().includes(q);}
 function searchNoteControls(f){return isAdmin?`${f.search_note?`<p class="small">搜尋備註：${esc(f.search_note)}</p>`:''}<div class="actions"><button class="soft" type="button" onclick="openSearchNoteModal('${esc(f.id)}')">✎ 編輯搜尋備註</button></div>`:'';}
-function flowerQualityRank(name){return highestQualityFlowers.has(name)?0:redQualityFlowers.has(name)?1:2;}
+function effectiveQuality(f){return ['天品','仙品','華品'].includes(f.rarity)?f.rarity:(highestQualityFlowers.has(f.name)?'天品':redQualityFlowers.has(f.name)?'仙品':'華品');}
+function flowerQualityRank(f){return ({'天品':0,'仙品':1,'華品':2})[effectiveQuality(f)]??2;}
+function qualityBadge(f){const q=effectiveQuality(f);return `<span class="quality-tag ${q==='天品'?'tian':q==='仙品'?'xian':'hua'}">${q}</span>`;}
+function catalogEditControls(f){return isAdmin?`<div class="catalog-admin-actions"><button class="soft" type="button" onclick="openCatalogEditor('${esc(f.id)}')">✎ 編輯花種／品質</button></div>`:'';}
 /* V14: Keep the existing sorted cards and their event handlers. On mobile,
    place each next card into the currently shorter of two actual columns.
    On desktop restore the original flat DOM order. */
@@ -345,10 +354,10 @@ function renderCatalog(){
  const q=$('catalogSearch').value.trim().toLowerCase(),fid=$('catalogFriend').value;
  const owned=new Set(catalogOwned.filter(x=>x.friend_id===fid).map(x=>x.flower_id));
  const mode=$('catalogOwnedFilter').value;
- const arr=catalogFlowers.filter(f=>matchesFlowerSearch(f,q)&&(!fid||mode==='all'||(mode==='owned'?owned.has(f.id):!owned.has(f.id)))).sort((a,b)=>flowerQualityRank(a.name)-flowerQualityRank(b.name)||a.name.localeCompare(b.name,'zh-Hant'));
+ const arr=catalogFlowers.filter(f=>matchesFlowerSearch(f,q)&&(!fid||mode==='all'||(mode==='owned'?owned.has(f.id):!owned.has(f.id)))).sort((a,b)=>flowerQualityRank(a)-flowerQualityRank(b)||a.name.localeCompare(b.name,'zh-Hant'));
  const editable=!!user&&!!fid&&(isAdmin||myFriendId===fid)&&!catalogError;
  $('catalogStatus').textContent=(catalogError?catalogError+' ｜ ':'')+`共 ${catalogFlowers.length} 種花${fid?`，這位好友已擁有 ${owned.size} 種`:''}，目前顯示 ${arr.length} 種。`+(fid?` ${editable?'可以勾選收藏。':'此好友的收藏為唯讀。'}`:' 選擇好友後可查看收藏狀態。');
- $('catalogGrid').innerHTML=arr.length?arr.map(f=>`<article class="card catalog-card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3>${fid?`<label class="catalog-check"><input type="checkbox" data-flower-id="${esc(f.id)}" ${owned.has(f.id)?'checked':''} ${editable?'':'disabled'}>我擁有這種花</label>`:''}${searchNoteControls(f)}</article>`).join(''):'<div class="empty">沒有符合條件的花種。</div>';
+ $('catalogGrid').innerHTML=arr.length?arr.map(f=>`<article class="card catalog-card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3>${qualityBadge(f)}${fid?`<label class="catalog-check"><input type="checkbox" data-flower-id="${esc(f.id)}" ${owned.has(f.id)?'checked':''} ${editable?'':'disabled'}>我擁有這種花</label>`:''}${searchNoteControls(f)}${catalogEditControls(f)}</article>`).join(''):'<div class="empty">沒有符合條件的花種。</div>';
  scheduleMobileMasonry('catalogGrid');
  $('catalogGrid').querySelectorAll('input[data-flower-id]').forEach(input=>input.addEventListener('change',()=>toggleCatalogOwned(input,fid)));
 }
@@ -363,6 +372,64 @@ async function toggleCatalogOwned(input,fid){
  $('recordCount').textContent=catalogOwned.length;
 }
 
+function openCatalogEditor(id=null){
+ if(!isAdmin||!user)return alert('只有管理員可以管理花種');
+ const f=id?catalogFlowers.find(x=>String(x.id)===String(id)):null;
+ if(id&&!f)return alert('找不到花種，請重新整理');
+ editingCatalogId=f?.id||null;
+ $('catalogEditTitle').textContent=f?'編輯花種／品質':'新增花種';
+ $('catalogEditName').value=f?.name||'';
+ $('catalogEditRarity').value=f?effectiveQuality(f):'華品';
+ $('catalogEditNote').value=f?.search_note||'';
+ $('catalogEditImage').value='';
+ showCatalogEditPreview(f?.image_url||'');
+ $('catalogEditSave').disabled=false;
+ $('catalogEditModal').classList.remove('hidden');
+}
+function showCatalogEditPreview(url){$('catalogEditPreview').innerHTML=url?`<img src="${esc(url)}" alt="圖片預覽">`:'🌷';}
+function previewCatalogEditImage(){const file=$('catalogEditImage').files[0];if(!file)return;
+ if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)||file.size>5*1024*1024)return alert('請選擇 5 MB 以下的 JPG、PNG、WebP 或 GIF 圖片');
+ const reader=new FileReader();reader.onload=()=>showCatalogEditPreview(reader.result);reader.readAsDataURL(file);
+}
+function closeCatalogEditor(){if($('catalogEditSave').disabled)return;$('catalogEditModal').classList.add('hidden');editingCatalogId=null;}
+async function saveCatalogFlower(){
+ if(!sb||!user||!isAdmin)return alert('只有管理員可以儲存花種');
+ const name=$('catalogEditName').value.trim(),rarity=$('catalogEditRarity').value,note=$('catalogEditNote').value.trim();
+ if(!name)return alert('請輸入花種名稱');
+ if(!['天品','仙品','華品'].includes(rarity))return alert('請選擇有效品質');
+ if(catalogFlowers.some(f=>f.name===name&&String(f.id)!==String(editingCatalogId)))return alert('已有同名花種，請直接編輯現有花種');
+ const file=$('catalogEditImage').files[0];
+ if(file&&(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)||file.size>5*1024*1024))return alert('圖片格式不符或超過 5 MB');
+ const btn=$('catalogEditSave');btn.disabled=true;btn.textContent='儲存中…';
+ try{
+  const payload={name,rarity};
+  if(!editingCatalogId)payload.original_name=name;
+  // Search note uses its existing admin-only RPC when editing an existing flower.
+  if(!editingCatalogId)payload.search_note=note||null;
+  if(file){
+   const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'})[file.type];
+   const path=`flower-catalog-2026/${crypto.randomUUID()}.${ext}`;
+   const uploaded=await sb.storage.from('flower-images').upload(path,file,{contentType:file.type,upsert:false});
+   if(uploaded.error)throw new Error('圖片上傳失敗：'+uploaded.error.message+'（請確認已執行 V18 SQL 的 Storage 權限設定）');
+   payload.image_url=sb.storage.from('flower-images').getPublicUrl(path).data.publicUrl;
+  }
+  let result;
+  if(editingCatalogId){result=await sb.from('flower_catalog').update(payload).eq('id',editingCatalogId).select('id').single();}
+  else{result=await sb.from('flower_catalog').insert(payload).select('id').single();}
+  if(result.error)throw new Error('花種儲存失敗：'+result.error.message+'（請確認 V18 SQL 已執行）');
+  if(editingCatalogId){
+   const existing=catalogFlowers.find(f=>String(f.id)===String(editingCatalogId));
+   if((existing?.search_note||'')!==note){
+    const updated=await sb.rpc('update_flower_search_note',{p_flower_id:editingCatalogId,p_note:note});
+    if(updated.error)throw new Error('花種與品質已儲存，但搜尋備註更新失敗：'+updated.error.message);
+   }
+  }
+  $('catalogEditModal').classList.add('hidden');editingCatalogId=null;
+  await loadCatalog();alert('花種資料已儲存！');
+ }catch(e){alert(e.message||String(e));}
+ finally{btn.disabled=false;btn.textContent='儲存花種';}
+}
+$('catalogEditModal').addEventListener('click',e=>{if(e.target===$('catalogEditModal'))closeCatalogEditor();});
 function openSearchNoteModal(id){
  if(!isAdmin||!user)return alert('只有管理員可以編輯搜尋備註');
  const flower=catalogFlowers.find(f=>String(f.id)===String(id));
