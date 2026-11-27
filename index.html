@@ -94,7 +94,7 @@ async function signIn(){if(!sb)return alert('請先在管理設定完成雲端�
 async function signUp(){if(!sb)return alert('請先在管理設定完成雲端連線');let {error}=await sb.auth.signUp({email:$('email').value,password:$('password').value});if(error)alert(error.message);else alert('註冊申請已送出。請依 Supabase 郵件設定完成驗證，再請管理者授予編輯權。')}
 async function signOut(){await sb.auth.signOut()}
 async function loadData(){if(!sb)return;let [fr,fl,links]=await Promise.all([sb.from('friends').select('*').order('name'),sb.from('flowers').select('*').order('created_at',{ascending:false}),sb.from('flower_friends').select('flower_id,friend_id')]);if(fr.error||fl.error||links.error){const e=fr.error||fl.error||links.error;setNotice('舊資料讀取失敗：'+e.message+'（'+(e.code||'無錯誤代碼')+'）。');await loadCatalog();return}friends=fr.data||[];flowers=fl.data||[];flowerLinks=links.data||[];setNotice('雲端已連線。');render();await loadCatalog()}
-function render(){ $('friendCount').textContent=friends.length;$('flowerCount').textContent=catalogFlowers.length;$('recordCount').textContent=catalogOwned.length;$('fFriends').innerHTML=friends.map(f=>`<label class="friend-choice"><input type="checkbox" value="${f.id}">${esc(f.name)}</label>`).join('');renderFlowers();$('friendsList').innerHTML=friends.length?friends.map(f=>`<article class="card"><b>♡ ${esc(f.name)}</b><p>${flowers.filter(x=>friendIds(x).includes(f.id)).length} 筆花種紀錄</p>${isAdmin?`<div class="actions"><button class="danger" onclick="deleteFriend('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">目前還沒有好友資料。</div>'}
+function render(){ $('friendCount').textContent=friends.length;$('flowerCount').textContent=catalogFlowers.length;$('recordCount').textContent=catalogOwned.length;$('fFriends').innerHTML=friends.map(f=>`<label class="friend-choice"><input type="checkbox" value="${f.id}">${esc(f.name)}</label>`).join('');renderFlowers();$('friendsList').innerHTML=friends.length?friends.map(f=>`<article class="card"><b>♡ ${esc(f.name)}</b><p>${catalogOwned.filter(x=>x.friend_id===f.id).length} 種已收藏花種</p>${isAdmin?`<div class="actions"><button class="soft" onclick="editFriend('${f.id}')">編輯名稱</button><button class="danger" onclick="deleteFriend('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">目前還沒有好友資料。</div>'}
 function renderFlowers(){
  const q=$('search').value.trim().toLowerCase();
  const matching=flowers.filter(f=>!q||String(f.name||'').toLowerCase().includes(q));
@@ -153,6 +153,22 @@ async function saveFlower(){
 }
 async function deleteFlower(id){if(!canManage(flowers.find(f=>f.id===id)))return alert('只能刪除自己的收藏');if(!confirm('確定刪除這筆花種紀錄？'))return;let {error}=await sb.from('flowers').delete().eq('id',id);if(error)alert(error.message);else await loadData()}
 async function addFriend(){if(!isAdmin)return alert('僅管理員可以新增好友');let name=$('friendName').value.trim();if(!name)return alert('請輸入好友名稱');let {error}=await sb.from('friends').insert({name});if(error)alert(error.message);else{$('friendName').value='';await loadData()}}
+async function editFriend(id){
+ if(!user||!isAdmin)return alert('只有管理員可以編輯好友名稱');
+ const friend=friends.find(f=>String(f.id)===String(id));
+ if(!friend)return alert('找不到這位好友，請重新整理後再試');
+ const answer=prompt('修改好友名稱（原本的花種收藏會保留）：',friend.name);
+ if(answer===null)return;
+ const newName=answer.trim();
+ if(!newName)return alert('好友名稱不能空白');
+ if(newName===friend.name)return;
+ if(friends.some(f=>String(f.id)!==String(id)&&f.name.trim()===newName))return alert('已有同名好友，請使用不同名稱');
+ const {data,error}=await sb.from('friends').update({name:newName}).eq('id',id).select('id,name');
+ if(error)return alert('修改好友名稱失敗：'+error.message);
+ if(!data||data.length!==1)return alert('無法確認修改成功，請重新整理後檢查；好友收藏未被刪除');
+ await loadData();
+ alert('好友名稱已更新，原本的花種收藏紀錄已保留。');
+}
 async function deleteFriend(id){if(!isAdmin)return alert('僅管理員可以刪除好友');if(!confirm('確定刪除好友及其花種紀錄？'))return;let {error}=await sb.from('friends').delete().eq('id',id);if(error)alert(error.message);else await loadData()}
 function view(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['catalog','allflowers','friends','settings'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==v))}
 
