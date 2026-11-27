@@ -97,32 +97,26 @@ header h1 {
   #catalogOwnerGrid .card p, #flowerGrid .card p { overflow-wrap: anywhere; word-break: normal; }
 }
 
-/* V13: mobile-only two-column masonry layout.
-   The existing sorted DOM order and all card event handlers remain unchanged.
-   CSS multi-column layout reads top-to-bottom in each column. */
+/* V14: two real mobile columns; cards flow into the shorter column. */
 @media (max-width: 620px) {
-  #catalogOwnerGrid, #catalogGrid, #flowerGrid {
-    display: block;
-    columns: 2;
-    column-gap: 10px;
+  #catalogOwnerGrid.v14-masonry, #catalogGrid.v14-masonry, #flowerGrid.v14-masonry {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
   }
-  #catalogOwnerGrid > .card, #catalogGrid > .card, #flowerGrid > .card {
-    display: inline-block;
-    width: 100%;
-    box-sizing: border-box;
-    vertical-align: top;
-    margin: 0 0 10px;
-    break-inside: avoid;
-    -webkit-column-break-inside: avoid;
-    page-break-inside: avoid;
+  .v14-masonry > .v14-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 0;
+    min-width: 0;
   }
-  #catalogOwnerGrid > .empty, #catalogGrid > .empty, #flowerGrid > .empty {
-    column-span: all;
-  }
+  .v14-masonry .v14-column > .card {width:100%;box-sizing:border-box;margin:0;height:auto;}
+  .v14-masonry > .empty {width:100%;}
 }
 @media (max-width: 350px) {
-  #catalogOwnerGrid, #catalogGrid, #flowerGrid {column-gap: 7px;}
-  #catalogOwnerGrid > .card, #catalogGrid > .card, #flowerGrid > .card {margin-bottom: 7px;}
+  #catalogOwnerGrid.v14-masonry, #catalogGrid.v14-masonry, #flowerGrid.v14-masonry,
+  .v14-masonry > .v14-column {gap:7px;}
 }
 </style>
 <!-- Supabase client library -->
@@ -191,6 +185,7 @@ function renderFlowers(){
  const arr=matching.filter(f=>!fid||friendIds(f).includes(fid));
  $('countLabel').textContent=`（${arr.length} 筆；原始紀錄共 ${flowers.length} 筆）`;
  $('flowerGrid').innerHTML=arr.length?arr.map(f=>`<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ ${esc(friendIds(f).map(friendName).join('、')||'未指定好友')}</p>${canManage(f)?`<div class="actions"><button class="soft" onclick="editFlower('${f.id}')">編輯</button><button class="danger" onclick="deleteFlower('${f.id}')">刪除</button></div>`:''}</article>`).join(''):'<div class="empty">❀<br>目前沒有符合條件的花種紀錄。</div>';
+ scheduleMobileMasonry('flowerGrid');
  renderCatalogOwners();
 }
 
@@ -222,6 +217,7 @@ function renderCatalogOwners(){
   const shown=selectedFriendId?[String(selectedFriendId)]:[...owners];
   return `<article class="card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3><p>♡ 擁有者：${esc(shown.map(friendName).join('、'))}</p></article>`;
  }).join(''):'<div class="empty">這位好友目前沒有符合條件的已擁有花種。</div>';
+ scheduleMobileMasonry('catalogOwnerGrid');
 }
 
 function friendIds(f){let ids=flowerLinks.filter(x=>x.flower_id===f.id).map(x=>x.friend_id);return ids.length?ids:(f.friend_id?[f.friend_id]:[])}
@@ -296,6 +292,46 @@ async function loadCatalog(){
 const highestQualityFlowers=new Set(["紫霄雲庭", "金鱗飛渡", "星璿寰宇", "身有彩翼", "天上宮闕", "焰火迎春"]);
 const redQualityFlowers=new Set(["九色靈鹿", "仙魅靈狐", "夜夢花庭", "夢幻之心", "大暑·夏漪清歡", "天下 一墨", "小雪·綺窗花韻", "巧月·星眸應水", "扶搖雲鯤", "星垂綺夜", "星夜奇遇", "星河映蕊", "有龍則靈", "杏月·花影雅憩", "柳月·溪亭燕語", "桂月·秋千雅語", "桃月·雲汐灼華", "梅月·疏影聽弦", "榴月·絳花照影", "槐月·蝶夢輕語", "歡雪頌冬", "歡雲妙舞", "瑤光芙華", "碧羽青鸞", "福運招財", "秋分·楓華玉律", "緋夜薔歌", "緣定鵲橋", "繁花滿築", "花宴流芳", "花嶼閑趣", "花映長思", "花溪燈語", "花漾春山", "花澗聽泉", "花階聆音", "芳翎昭錦", "芳華尋蝶", "荷月·池光夏夢", "菊月·花間飛鳶", "葭月·棲舟泛漪", "處暑·花苑拾香", "陽月·芙香盈袖", "霜降·丹柿映輝", "飛花似夢"]);
 function flowerQualityRank(name){return highestQualityFlowers.has(name)?0:redQualityFlowers.has(name)?1:2;}
+/* V14: Keep the existing sorted cards and their event handlers. On mobile,
+   place each next card into the currently shorter of two actual columns.
+   On desktop restore the original flat DOM order. */
+function applyMobileMasonry(id){
+ const grid=$(id);if(!grid)return;
+ const isMobile=window.matchMedia('(max-width: 620px)').matches;
+ const existing=grid.querySelectorAll(':scope > .v14-column');
+ let cards=existing.length?[...existing[0].children,...existing[1].children]:[...grid.children];
+ // Restore source order before each layout; original order is stored per card.
+ cards.sort((a,b)=>Number(a.dataset.v14Index||0)-Number(b.dataset.v14Index||0));
+ grid.replaceChildren(...cards);
+ grid.classList.remove('v14-masonry');
+ if(!isMobile||cards.length<2||cards.some(x=>!x.classList.contains('card')))return;
+ cards.forEach((card,i)=>card.dataset.v14Index=i);
+ const left=document.createElement('div'),right=document.createElement('div');
+ left.className=right.className='v14-column';
+ grid.classList.add('v14-masonry');grid.replaceChildren(left,right);
+ let totals=[0,0];
+ for(const card of cards){
+   const col=totals[0]<=totals[1]?0:1;
+   (col===0?left:right).appendChild(card);
+   // Images are square by CSS; include text height and card padding.
+   // offsetHeight gives actual height when visible, estimate when tab is hidden.
+   const measured=card.getBoundingClientRect().height;
+   const text=(card.querySelector('p')?.textContent||'')+(card.querySelector('h3')?.textContent||'');
+   const estimate=180+Math.ceil(text.length/9)*21;
+   totals[col]+=(measured||estimate)+10;
+ }
+}
+let v14LayoutPending=false;
+function scheduleMobileMasonry(id){
+ requestAnimationFrame(()=>applyMobileMasonry(id));
+}
+window.addEventListener('resize',()=>{
+ if(v14LayoutPending)return;v14LayoutPending=true;
+ requestAnimationFrame(()=>{v14LayoutPending=false;
+  ['catalogOwnerGrid','catalogGrid','flowerGrid'].forEach(applyMobileMasonry);
+ });
+});
+
 function renderCatalog(){
  const q=$('catalogSearch').value.trim().toLowerCase(),fid=$('catalogFriend').value;
  const owned=new Set(catalogOwned.filter(x=>x.friend_id===fid).map(x=>x.flower_id));
@@ -304,6 +340,7 @@ function renderCatalog(){
  const editable=!!user&&!!fid&&(isAdmin||myFriendId===fid)&&!catalogError;
  $('catalogStatus').textContent=(catalogError?catalogError+' ｜ ':'')+`共 ${catalogFlowers.length} 種花${fid?`，這位好友已擁有 ${owned.size} 種`:''}，目前顯示 ${arr.length} 種。`+(fid?` ${editable?'可以勾選收藏。':'此好友的收藏為唯讀。'}`:' 選擇好友後可查看收藏狀態。');
  $('catalogGrid').innerHTML=arr.length?arr.map(f=>`<article class="card catalog-card"><div class="pic">${f.image_url?`<img loading="lazy" src="${esc(f.image_url)}" alt="${esc(f.name)}">`:'🌷'}</div><h3>${esc(f.name)}</h3>${fid?`<label class="catalog-check"><input type="checkbox" data-flower-id="${esc(f.id)}" ${owned.has(f.id)?'checked':''} ${editable?'':'disabled'}>我擁有這種花</label>`:''}</article>`).join(''):'<div class="empty">沒有符合條件的花種。</div>';
+ scheduleMobileMasonry('catalogGrid');
  $('catalogGrid').querySelectorAll('input[data-flower-id]').forEach(input=>input.addEventListener('change',()=>toggleCatalogOwned(input,fid)));
 }
 async function toggleCatalogOwned(input,fid){
